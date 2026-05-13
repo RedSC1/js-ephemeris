@@ -1,19 +1,21 @@
 import { chebEval, chebDeriv } from '../math/chebyshev.js';
 import { BinaryReader } from './reader.js';
-import { Vec3, StateVec } from '../types.js';
+import type { Vec3, StateVec } from '../types.js';
 
 const AU_KM = 149597870.7;
 
 // Per-body quantization units (km)
 const QUANT_UNITS: Record<number, number> = {
-  1: 0.04,   // Mercury
-  2: 0.08,   // Venus
-  3: 0.08,   // Earth/EMB
-  4: 0.13,   // Mars
-  5: 0.55,   // Jupiter
-  6: 1.0,    // Saturn
-  7: 2.0,    // Uranus
-  8: 3.2,    // Neptune
+  1: 0.04,      // Mercury
+  2: 0.08,      // Venus
+  3: 0.08,      // Earth/EMB
+  4: 0.13,      // Mars
+  5: 0.55,      // Jupiter
+  6: 1.0,       // Saturn
+  7: 2.0,       // Uranus
+  8: 3.2,       // Neptune
+  9: 4.0,       // Pluto
+  10: 0.0003,   // Moon (geocentric, 0.3 meters)
 };
 const DEFAULT_QUANT_UNIT = 0.04;
 

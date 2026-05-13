@@ -20,12 +20,47 @@ export type StateVec = [number, number, number, number, number, number];
 
 export type CoordFrame = 'equatorial' | 'ecliptic';
 
+export type CoordCenter = 'sun' | 'earth' | 'emb' | 'topocentric' | string;
+
 export type PrecisionLevel = 'high' | 'low';
+
+export interface Observer {
+  /** 经度 (度)，向东为正 */
+  lon: number;
+  /** 纬度 (度)，向北为正 */
+  lat: number;
+  /** 海拔高度 (米)，默认为 0 */
+  alt?: number;
+}
 
 export interface EphemerisResult {
   xyz: Vec3;
   body: BodyTag;
-  jd: number;
+  /** 坐标中心：'sun' (日心), 'earth' (地心), 'topocentric' (站心) 等 */
+  center: CoordCenter;
+  /** 参考系描述：如 'ICRF / J2000 Equatorial' */
+  frame: string;
+
+  /** 力学时 Julian Day (JDE) */
+  jdTT: number;
+  /** 世界时 Julian Day (JD) */
+  jdUT: number;
+  /** 该时刻的 Delta-T (秒) */
+  deltaT: number;
   precision: PrecisionLevel;
   lbr(): Vec3;
+  /** 转换为当期真黄道坐标系 (True Ecliptic of Date) */
+  toTrueEcliptic(): EphemerisResult;
+  /** 转换为当期真赤道坐标系 (True Equator of Date) */
+  toTrueEquatorial(): EphemerisResult;
+  /** 转换为 J2000 动力学黄道坐标系 (J2000 Ecliptic, 与 Swiss Eph 一致) */
+  toJ2000Ecliptic(): EphemerisResult;
+  /** 转换为 ICRF/GCRS 赤道坐标系 (即 DE441 原始参考系) */
+  toJ2000Equatorial(): EphemerisResult;
+  /** 转换为 J2000 动力学平赤道坐标系 (经过 frame bias，与 Swiss Eph 一致) */
+  toJ2000MeanEquatorial(): EphemerisResult;
+  /** 转换为地心坐标系 (Geocentric) */
+  toGeocentric(): Promise<EphemerisResult>;
+  /** 转换为日心坐标系 (Heliocentric) */
+  toHeliocentric(): Promise<EphemerisResult>;
 }

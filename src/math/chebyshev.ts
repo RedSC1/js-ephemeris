@@ -20,6 +20,11 @@ export function chebEval(coeffs: Float64Array, x: number): number {
 /**
  * Chebyshev polynomial derivative evaluation.
  * Returns d/dx of the polynomial at x.
+ * 
+ * Uses simultaneous Clenshaw recurrence for value and derivative:
+ *   b_i = 2x * b_{i+1} - b_{i+2} + c_i
+ *   d_i = 2x * d_{i+1} - d_{i+2} + 2 * b_{i+1}
+ * Final result: P'(x) = x * d_0 - d_1 + b_0
  */
 export function chebDeriv(coeffs: Float64Array, x: number): number {
   const n = coeffs.length;
@@ -38,5 +43,5 @@ export function chebDeriv(coeffs: Float64Array, x: number): number {
     b0 = 2 * x * b1 - b2 + coeffs[i];
     d0 = 2 * x * d1 - d2 + 2 * b1;
   }
-  return x * d0 - d1 + b0 - coeffs[0];
+  return x * d0 - d1 + b0;
 }
