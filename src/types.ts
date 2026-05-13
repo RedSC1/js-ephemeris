@@ -33,6 +33,26 @@ export interface Observer {
   alt?: number;
 }
 
+/**
+ * 地心黄道状态 (占星用)
+ */
+export interface GeocentricEclipticState {
+  /** 地心真黄经 (度) [0, 360) */
+  lon: number;
+  /** 地心真黄纬 (度) [-90, 90] */
+  lat: number;
+  /** 地心距离 (AU) */
+  distance: number;
+  /** 黄经速度 (度/天)，负值 = 逆行 */
+  lonSpeed: number;
+  /** 黄纬速度 (度/天) */
+  latSpeed: number;
+  /** 径向速度 (AU/天)，正值 = 远离 */
+  distSpeed: number;
+  /** 是否逆行 */
+  retrograde: boolean;
+}
+
 export interface EphemerisResult {
   xyz: Vec3;
   body: BodyTag;

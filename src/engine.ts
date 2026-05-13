@@ -1,4 +1,4 @@
-import type { BodyTag, EphemerisResult, Vec3, StateVec } from './types.js';
+import type { BodyTag, EphemerisResult, Vec3, StateVec, GeocentricEclipticState } from './types.js';
 import { EphemerisTime } from './time.js';
 import type { EphemerisTimeOptions } from './time.js';
 import type { PositionResolver, DeltaTProvider, PrecessionProvider, NutationProvider } from './manifest/types.js';
@@ -117,7 +117,7 @@ export class Ephemeris {
             
             const trueEqPos = mulMatVec(npMat, basePos);
             if (targetFrame === 'True Equator of Date') return trueEqPos;
-            if (targetFrame === 'True Ecliptic of Date') return mulMatVec(rotX(nut.tobl), trueEqPos);
+            if (targetFrame === 'True Ecliptic of Date') return mulMatVec(rotX(-nut.tobl), trueEqPos);
             
             if (targetFrame === 'Horizontal') return basePos;
 
@@ -207,6 +207,93 @@ export class Ephemeris {
    */
   getPrecessionMatrix(jdTT: number): number[][] {
     return this.precessionProvider.getMatrix(jdTT);
+  }
+
+  /**
+   * 获取天体的地心真黄道状态 (位置 + 速度)
+   * 占星应用的核心方法：返回黄经、黄纬、距离及其变化率
+   */
+  async geocentricState(
+    tag: BodyTag,
+    timeInput: number | Date | EphemerisTime
+  ): Promise<GeocentricEclipticState> {
+    const time = this.normalizeTime(timeInput);
+    
+    // 获取目标和地球的完整状态 (位置+速度, J2000/ICRF)
+    const targetState = await this.state(tag, time, { computeVelocity: true });
+    const earthState = await this.state('ear', time, { computeVelocity: true });
+    
+    // EMB → Earth 修正 (位置和速度)
+    const moonState = await this.state('moon', time, { computeVelocity: true });
+    const MU = 1.0 / (1.0 + 81.30056); // M_moon / (M_earth + M_moon)
+    
+    // 地心向量 = 目标日心 - 地球真实位置
+    const geoPos: Vec3 = [
+      targetState[0] - (earthState[0] - moonState[0] * MU),
+      targetState[1] - (earthState[1] - moonState[1] * MU),
+      targetState[2] - (earthState[2] - moonState[2] * MU)
+    ];
+    const geoVel: Vec3 = [
+      targetState[3] - (earthState[3] - moonState[3] * MU),
+      targetState[4] - (earthState[4] - moonState[4] * MU),
+      targetState[5] - (earthState[5] - moonState[5] * MU)
+    ];
+    
+    // 岁差+章动矩阵 (J2000 → True Equator of Date)
+    const pMat = this.precessionProvider.getMatrix(time.jdTT);
+    const nut = this.nutationProvider.getNutation(time.jdTT);
+    
+    const cobm = Math.cos(nut.mobl), sobm = Math.sin(nut.mobl);
+    const cobt = Math.cos(nut.tobl), sobt = Math.sin(nut.tobl);
+    const cpsi = Math.cos(nut.dpsi), spsi = Math.sin(nut.dpsi);
+    const nMat = [
+      [cpsi,        -spsi * cobm,                     -spsi * sobm],
+      [spsi * cobt,  cpsi * cobm * cobt + sobm * sobt, cpsi * sobm * cobt - cobm * sobt],
+      [spsi * sobt,  cpsi * cobm * sobt - sobm * cobt, cpsi * sobm * sobt + cobm * cobt]
+    ];
+    const npMat = matMul(nMat, pMat);
+    
+    // True Equator → True Ecliptic (绕 x 轴转 -tobl)
+    const rEcl = rotX(-nut.tobl);
+    
+    // 完整变换矩阵: J2000 → True Ecliptic of Date
+    const fullMat = matMul(rEcl, npMat);
+    
+    // 变换位置和速度 (线性变换，矩阵对速度同样适用)
+    const eclPos = mulMatVec(fullMat, geoPos);
+    const eclVel = mulMatVec(fullMat, geoVel);
+    
+    // 直角坐标 → 球坐标 + 速度
+    const [x, y, z] = eclPos;
+    const [vx, vy, vz] = eclVel;
+    
+    const rxy2 = x * x + y * y;
+    const rxy = Math.sqrt(rxy2);
+    const r = Math.sqrt(rxy2 + z * z);
+    
+    // 黄经、黄纬、距离
+    let lon = Math.atan2(y, x) * (180 / Math.PI);
+    if (lon < 0) lon += 360;
+    const lat = Math.atan2(z, rxy) * (180 / Math.PI);
+    
+    // 黄经速度: d/dt[atan2(y,x)] = (x*vy - y*vx) / (x² + y²)
+    const lonSpeed = ((x * vy - y * vx) / rxy2) * (180 / Math.PI); // deg/day
+    
+    // 黄纬速度: d/dt[atan2(z, sqrt(x²+y²))] = (rxy*vz - z*(x*vx+y*vy)/rxy) / r²
+    const latSpeed = ((rxy * vz - z * (x * vx + y * vy) / rxy) / (r * r)) * (180 / Math.PI);
+    
+    // 径向速度: d/dt[r] = (x*vx + y*vy + z*vz) / r
+    const distSpeed = (x * vx + y * vy + z * vz) / r;
+    
+    return {
+      lon,
+      lat,
+      distance: r,
+      lonSpeed,
+      latSpeed,
+      distSpeed,
+      retrograde: lonSpeed < 0
+    };
   }
 
   /**
