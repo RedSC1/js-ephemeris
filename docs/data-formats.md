@@ -65,29 +65,39 @@ Position in J2000 equatorial: `P = cx*u + cy*v + cz*w`
 
 ### Quantization Units (km)
 
-| Body ID | Body | Unit | Rationale |
-|---------|------|------|-----------|
-| 1 | Mercury | 0.04 | ~10⁻⁸ × orbit radius |
-| 2 | Venus | 0.08 | |
-| 3 | Earth/EMB | 0.08 | |
-| 4 | Mars | 0.13 | |
-| 5 | Jupiter | 0.55 | |
-| 6 | Saturn | 1.0 | |
-| 7 | Uranus | 2.0 | |
-| 8 | Neptune | 3.2 | |
-| 9 | Pluto | 4.0 | (OPV2 uses per-segment scale instead) |
-| 10 | Moon | 0.0003 | Geocentric, 0.3 meters |
-| 101 | Ceres | 0.04 | |
-| 102 | Pallas | 0.04 | |
-| 103 | Juno | 0.04 | |
-| 104 | Vesta | 0.04 | |
-| 105 | Eros | 0.04 | |
-| 106 | Chiron | 0.04 | |
-| 107 | Pholus | 0.04 | |
-| 108 | Nessus | 0.04 | |
-| 109 | Lilith (1181) | 0.04 | |
+| Body ID | Body | Unit | Format | Content |
+|---------|------|------|--------|---------|
+| 1 | Mercury | 0.04 | OPM2 | Heliocentric position |
+| 2 | Venus | 0.08 | OPM2 | Heliocentric position |
+| 3 | Earth/EMB | 0.08 | OPM2 | Heliocentric position |
+| 4 | Mars | 0.13 | OPM2 | Heliocentric position |
+| 5 | Jupiter | 0.55 | OPM2 | System barycenter position |
+| 6 | Saturn | 1.0 | OPM2 | System barycenter position |
+| 7 | Uranus | 2.0 | OPM2 | System barycenter position |
+| 8 | Neptune | 3.2 | OPM2 | System barycenter position |
+| 9 | Pluto | — | OPV2 | System barycenter position (per-segment scale) |
+| 10 | Moon | 0.0003 | OPM2 | Geocentric position |
+| 101 | Ceres | 0.5 | OPM2 | Heliocentric position |
+| 102 | Pallas | 0.5 | OPM2 | Heliocentric position |
+| 103 | Juno | 0.5 | OPM2 | Heliocentric position |
+| 104 | Vesta | 0.5 | OPM2 | Heliocentric position |
+| 105 | Eros | 0.3 | OPM2 | Heliocentric position |
+| 106 | Chiron | 5.0 | OPM2 | Heliocentric position |
+| 107 | Pholus | 8.0 | OPM2 | Heliocentric position |
+| 108 | Nessus | 12.0 | OPM2 | Heliocentric position |
+| 109 | Lilith (1181) | 0.5 | OPM2 | Heliocentric position |
+| 201 | Jupiter COB | — | OPM2 | Barycenter-to-body offset |
+| 202 | Saturn COB | — | OPM2 | Barycenter-to-body offset |
+| 203 | Uranus COB | — | OPM2 | Barycenter-to-body offset |
+| 204 | Neptune COB | — | OPM2 | Barycenter-to-body offset |
+| 205 | Pluto COB | — | OPM2 | Barycenter-to-body offset |
 
-Asteroids (ID 101+) use the default unit of 0.04 km.
+ID numbering scheme:
+- 1–10: Major bodies (planets + Moon)
+- 101–109: Asteroids and centaurs
+- 201–205: Center-of-body (COB) offset data
+
+Asteroids (ID 101+) use the default unit of 0.04 km for built-in 1800-2100 data. Extended data (30000-year) uses larger units to avoid int32 overflow at greater distances.
 
 ### Evaluation
 
