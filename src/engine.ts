@@ -2,6 +2,8 @@ import type { BodyTag, EphemerisResult, Vec3, StateVec, GeocentricEclipticState 
 import { EphemerisTime } from './time.js';
 import type { EphemerisTimeOptions } from './time.js';
 import type { PositionResolver, DeltaTProvider, PrecessionProvider, NutationProvider } from './manifest/types.js';
+import type { DataLoader } from './loader/interface.js';
+import type { RemoteManifest } from './manifest/remote.js';
 import { deltaTByJD } from './corrections/delta-t.js';
 import { BuiltinResolver } from './manifest/builtin.js';
 import { 
@@ -35,6 +37,12 @@ export interface AstrometricOptions {
 export interface EphemerisOptions {
   /** 数据 CDN 基础路径 */
   baseUrl?: string;
+  /** 自定义数据加载器（与 baseUrl 二选一，loader 优先） */
+  loader?: DataLoader;
+  /** 远程数据 manifest（描述远程可用数据的时间范围和路径） */
+  remoteManifest?: RemoteManifest;
+  /** LRU 缓存容量，默认 32 */
+  cacheSize?: number;
   /** 自定义 Delta-T 提供者 */
   deltaTProvider?: DeltaTProvider;
   /** 初始解析器列表 */
@@ -65,6 +73,37 @@ export class Ephemeris {
 
     // 默认注册内置解析器
     this.registerResolver(new BuiltinResolver());
+
+    // 如果提供了 loader 或 baseUrl，注册远程解析器
+    if (options?.loader || options?.baseUrl) {
+      this.setupRemoteResolver(options);
+    }
+  }
+
+  /**
+   * 延迟设置远程解析器（避免构造函数中 import 循环）
+   */
+  private async setupRemoteResolver(options: EphemerisOptions): Promise<void> {
+    const { RemoteResolver } = await import('./manifest/remote.js');
+
+    let loader: DataLoader;
+    if (options.loader) {
+      loader = options.loader;
+    } else if (options.baseUrl) {
+      const { FetchLoader } = await import('./loader/fetch.js');
+      loader = new FetchLoader(options.baseUrl);
+    } else {
+      return;
+    }
+
+    if (options.remoteManifest) {
+      const resolverOpts: import('./manifest/remote.js').RemoteResolverOptions = {
+        loader,
+        manifest: options.remoteManifest,
+        ...(options.cacheSize !== undefined ? { cacheSize: options.cacheSize } : {})
+      };
+      this.registerResolver(new RemoteResolver(resolverOpts));
+    }
   }
 
   /**
@@ -155,6 +194,7 @@ export class Ephemeris {
               deltaT: time.deltaT,
               center: centerStr,
               frame: frameStr,
+              source: result.source,
               precision: result.precision,
               lbr: () => rectToSpherical(pos),
               toTrueEcliptic: () => frameStr === 'True Ecliptic of Date' ? createResult(frameStr, centerStr, currentRawPos) : createResult('True Ecliptic of Date', centerStr, currentRawPos),
@@ -290,7 +330,13 @@ export class Ephemeris {
     // 引力偏折修正: 太阳引力导致光线弯曲 (最大 ~1.75")
     // ----------------------------------------------------
     if (opt.deflection && tag !== 'sun') {
-      geoPos = applyDeflection(geoPos, earthPos, distance);
+      // 目标日心位置 = 地心位置 + 地球日心位置
+      const targetHelio: Vec3 = [
+        geoPos[0] + earthPos[0],
+        geoPos[1] + earthPos[1],
+        geoPos[2] + earthPos[2]
+      ];
+      geoPos = applyDeflection(geoPos, earthPos, targetHelio, distance);
     }
 
     // ----------------------------------------------------
@@ -378,7 +424,8 @@ export class Ephemeris {
         deltaT: time.deltaT,
         center: centerStr,
         frame: frameStr,
-        precision: 'high',
+        source: 'opm2',
+        precision: 'milliarcsec',
         lbr: () => rectToSpherical(currentRawPos),
         toTrueEcliptic: () => createSunResult('True Ecliptic of Date', centerStr, currentRawPos),
         toTrueEquatorial: () => createSunResult('True Equator of Date', centerStr, currentRawPos),

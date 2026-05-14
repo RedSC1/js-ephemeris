@@ -7,7 +7,7 @@ export type BodyTag =
   | 'moon'
   | 'ceres' | 'pallas' | 'juno' | 'vesta' | 'eros'
   | 'chiron' | 'pholus' | 'nessus' | 'lilith'
-  | string;
+  | (string & {});
 
 /**
  * 3D 向量 [x, y, z]
@@ -21,9 +21,13 @@ export type StateVec = [number, number, number, number, number, number];
 
 export type CoordFrame = 'equatorial' | 'ecliptic';
 
-export type CoordCenter = 'sun' | 'earth' | 'emb' | 'topocentric' | string;
+export type CoordCenter = 'sun' | 'earth' | 'emb' | 'topocentric' | (string & {});
 
-export type PrecisionLevel = 'high' | 'low';
+/** 数据来源 */
+export type DataSource = 'spk' | 'opm2' | 'opv2' | 'sxwnl' | 'astronomy-engine' | 'kepler' | (string & {});
+
+/** 精度等级 */
+export type PrecisionLevel = 'milliarcsec' | 'arcsec' | 'arcmin';
 
 export interface Observer {
   /** 经度 (度)，向东为正 */
@@ -68,6 +72,9 @@ export interface EphemerisResult {
   jdUT: number;
   /** 该时刻的 Delta-T (秒) */
   deltaT: number;
+  /** 数据来源 */
+  source: DataSource;
+  /** 精度等级 */
   precision: PrecisionLevel;
   lbr(): Vec3;
   /** 转换为当期真黄道坐标系 (True Ecliptic of Date) */

@@ -1,4 +1,4 @@
-import type { BodyTag, Vec3, StateVec, PrecisionLevel, CoordFrame } from '../types.js';
+import type { BodyTag, Vec3, StateVec, PrecisionLevel, DataSource, CoordFrame } from '../types.js';
 import type { EphemerisTime } from '../time.js';
 
 /**
@@ -7,8 +7,8 @@ import type { EphemerisTime } from '../time.js';
 export interface ResolverResult {
   /** 位置 (+速度) */
   state: Vec3 | StateVec;
-  /** 数据来源名称 (如 'opm2', 'vsop87', 'spk') */
-  source: string;
+  /** 数据来源 */
+  source: DataSource;
   /** 精度等级 */
   precision: PrecisionLevel;
   /** 坐标系中心 */

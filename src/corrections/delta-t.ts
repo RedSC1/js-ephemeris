@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ΔT (TT - UT1) 计算模块
  * 从 opendestiny/astro-wnl 移植

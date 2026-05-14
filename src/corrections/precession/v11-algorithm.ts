@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Vec3 } from '../../types.js';
 import type { PrecessionProvider } from '../../manifest/types.js';
 

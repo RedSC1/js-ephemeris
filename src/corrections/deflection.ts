@@ -1,65 +1,114 @@
 import type { Vec3 } from '../types.js';
 
 /**
- * 太阳引力偏折常数 (Schwarzschild radius): 2 * G * M_sun / c^2，单位：AU
+ * 太阳引力偏折常数: 2 * G * M_sun / c^2，单位：AU (Schwarzschild radius)
+ * SOFA 中称为 SRS = 1.97412574336e-8 AU
  */
-const SCHWARZSCHILD_RADIUS_AU = 1.97412574336e-8;
+const SRS_AU = 1.97412574336e-8;
 
 /**
- * 太阳圆盘边缘的 cos(角距) 阈值，约对应 0.26° 视半径
- * 在此阈值以内线性衰减偏折量，防止目标穿越太阳圆盘时出现方向跳变
+ * 太阳物理半径 (km)
  */
-const GRAZING_THRESHOLD = -0.9999897;
+const SUN_RADIUS_KM = 696000;
+
+/**
+ * 1 AU (km)
+ */
+const AU_KM = 149597870.7;
 
 /**
  * 太阳引力偏折修正 (Gravitational Deflection)
  * 
- * 光线经过太阳附近时路径弯曲，最大偏折量约 1.75" (掠日)。
- * 在太阳圆盘内部应用线性衰减，避免不连续跳变。
+ * 基于 SOFA iauLd 函数实现 (Klioner 2003, Expr. 70)。
+ * 
+ * 当目标在太阳圆盘内部时，使用 enclosed mass fraction 模型平滑衰减，
+ * 保证黄经曲线处处光滑。
  * 
  * @param objPos 目标地心位置向量 (J2000/ICRF, AU)
- * @param earthPos 地球日心位置向量 (J2000/ICRF, AU)，用于确定太阳方向
+ * @param earthPos 地球日心位置向量 (J2000/ICRF, AU)
+ * @param targetHelio 目标日心位置向量 (J2000/ICRF, AU)，用于确定太阳到目标的方向
  * @param distance 目标地心距离 (AU)
  * @returns 偏折修正后的位置向量
  */
-export function applyDeflection(objPos: Vec3, earthPos: Vec3, distance: number): Vec3 {
-  // 观测者(地球)到太阳的向量 = -earthPos (因为数据是日心的)
-  const sunVec: Vec3 = [-earthPos[0], -earthPos[1], -earthPos[2]];
-  const E = Math.sqrt(sunVec[0] * sunVec[0] + sunVec[1] * sunVec[1] + sunVec[2] * sunVec[2]);
-  const q: Vec3 = [sunVec[0] / E, sunVec[1] / E, sunVec[2] / E]; // 指向太阳的单位向量
+export function applyDeflection(
+  objPos: Vec3,
+  earthPos: Vec3,
+  targetHelio: Vec3,
+  distance: number
+): Vec3 {
+  // SOFA iauLd 参数对应关系:
+  // p = objPos / distance (observer to source, unit vector)
+  // e = earthPos / |earthPos| (Sun to observer, unit vector) — 注意: earthPos 就是从太阳到地球
+  // q = targetHelio / |targetHelio| (Sun to source, unit vector)
+  // em = |earthPos| (Sun to observer distance, AU)
 
-  const p: Vec3 = [objPos[0] / distance, objPos[1] / distance, objPos[2] / distance]; // 指向目标的单位向量
+  const em = Math.sqrt(earthPos[0] * earthPos[0] + earthPos[1] * earthPos[1] + earthPos[2] * earthPos[2]);
+  const e: Vec3 = [earthPos[0] / em, earthPos[1] / em, earthPos[2] / em];
 
-  const pDotQ = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+  const p: Vec3 = [objPos[0] / distance, objPos[1] / distance, objPos[2] / distance];
 
-  // 目标几乎正好在太阳背后 (cos ≈ -1)，偏折公式发散，跳过
-  if (pDotQ <= -0.99999999) {
-    return objPos;
+  const targetDist = Math.sqrt(
+    targetHelio[0] * targetHelio[0] + targetHelio[1] * targetHelio[1] + targetHelio[2] * targetHelio[2]
+  );
+  const q: Vec3 = [targetHelio[0] / targetDist, targetHelio[1] / targetDist, targetHelio[2] / targetDist];
+
+  // qdqpe = q · (q + e) = 1 + q·e
+  // 当星体在太阳后面: q·e ≈ -1, qdqpe ≈ 0 (偏折最大)
+  // 当星体在太阳前面: q·e ≈ +1, qdqpe ≈ 2 (偏折最小)
+  const qDotE = q[0] * e[0] + q[1] * e[1] + q[2] * e[2];
+  let qdqpe = 1.0 + qDotE;
+
+  // 太阳视半径 sin 值（用于圆盘内衰减）
+  const sunRadiusSin = SUN_RADIUS_KM / (em * AU_KM);
+  // deflection limiter: dlim = phi²/2 where phi = solar angular radius
+  const dlim = sunRadiusSin * sunRadiusSin / 2.0;
+
+  // Enclosed mass fraction: 太阳圆盘内平滑衰减
+  let emf = 1.0;
+  if (qdqpe < dlim * 2) {
+    // 目标非常接近太阳方向，计算 impact factor
+    const pDotE = p[0] * e[0] + p[1] * e[1] + p[2] * e[2];
+    // 从观测者看，目标和太阳的角距的 sin 值
+    const impactFactor = Math.sqrt(Math.max(0, 1.0 - pDotE * pDotE));
+    if (impactFactor < sunRadiusSin) {
+      const x = impactFactor / sunRadiusSin;
+      emf = (x * 1.05) / (x + 0.05);
+    }
   }
 
-  // 平滑系数：太阳外部为 1.0，太阳圆盘内部从边缘线性衰减到中心的 0
-  let attenuationFactor = 1.0;
-  if (pDotQ < GRAZING_THRESHOLD) {
-    attenuationFactor = (1.0 + pDotQ) / (1.0 + GRAZING_THRESHOLD);
-  }
+  // 应用 limiter (SOFA 的 dlim 机制) 和 enclosed mass fraction
+  qdqpe = Math.max(qdqpe, dlim) ;
 
-  const factor = (SCHWARZSCHILD_RADIUS_AU / E / (1.0 + pDotQ)) * attenuationFactor;
+  // w = 2GM / (em * c² * qdqpe) = SRS / (em * qdqpe)
+  // 乘以 bm=1 (太阳质量) 和 emf
+  const w = (SRS_AU / em / qdqpe) * emf;
 
-  const dp: Vec3 = [
-    factor * (q[0] - pDotQ * p[0]),
-    factor * (q[1] - pDotQ * p[1]),
-    factor * (q[2] - pDotQ * p[2])
+  // 偏折方向: p × (e × q)
+  // e × q
+  const eXq: Vec3 = [
+    e[1] * q[2] - e[2] * q[1],
+    e[2] * q[0] - e[0] * q[2],
+    e[0] * q[1] - e[1] * q[0]
+  ];
+  // p × (e × q)
+  const pXeXq: Vec3 = [
+    p[1] * eXq[2] - p[2] * eXq[1],
+    p[2] * eXq[0] - p[0] * eXq[2],
+    p[0] * eXq[1] - p[1] * eXq[0]
   ];
 
-  // 加上偏折修正，归一化后恢复原始距离
-  const pDeflected: Vec3 = [p[0] + dp[0], p[1] + dp[1], p[2] + dp[2]];
-  const pDefLen = Math.sqrt(
-    pDeflected[0] * pDeflected[0] + pDeflected[1] * pDeflected[1] + pDeflected[2] * pDeflected[2]
-  );
+  // p1 = p + w * p×(e×q)
+  const p1: Vec3 = [
+    p[0] + w * pXeXq[0],
+    p[1] + w * pXeXq[1],
+    p[2] + w * pXeXq[2]
+  ];
 
+  // 归一化后恢复距离
+  const p1Len = Math.sqrt(p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2]);
   return [
-    (pDeflected[0] / pDefLen) * distance,
-    (pDeflected[1] / pDefLen) * distance,
-    (pDeflected[2] / pDefLen) * distance
+    (p1[0] / p1Len) * distance,
+    (p1[1] / p1Len) * distance,
+    (p1[2] / p1Len) * distance
   ];
 }

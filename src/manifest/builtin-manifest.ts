@@ -58,4 +58,49 @@ export const BUILTIN_MANIFEST: Record<string, BuiltinEntry[]> = {
     { jdStart: 2415020, jdEnd: 2451545, variable: 'moon_2415020_2451545_bin_gz' },
     { jdStart: 2451545, jdEnd: 2488070, variable: 'moon_2451545_2488070_bin_gz' }
   ],
+  'ceres': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'ceres_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'ceres_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'ceres_2451545_2488070_bin_gz' }
+  ],
+  'pallas': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'pallas_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'pallas_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'pallas_2451545_2488070_bin_gz' }
+  ],
+  'juno': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'juno_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'juno_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'juno_2451545_2488070_bin_gz' }
+  ],
+  'vesta': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'vesta_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'vesta_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'vesta_2451545_2488070_bin_gz' }
+  ],
+  'eros': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'eros_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'eros_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'eros_2451545_2488070_bin_gz' }
+  ],
+  'chiron': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'chiron_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'chiron_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'chiron_2451545_2488070_bin_gz' }
+  ],
+  'pholus': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'pholus_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'pholus_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'pholus_2451545_2488070_bin_gz' }
+  ],
+  'nessus': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'nessus_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'nessus_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'nessus_2451545_2488070_bin_gz' }
+  ],
+  'lilith': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'lilith_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'lilith_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'lilith_2451545_2488070_bin_gz' }
+  ],
 };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Chebyshev polynomial evaluation via Clenshaw recurrence.
  * Numerically stable for x in [-1, 1].

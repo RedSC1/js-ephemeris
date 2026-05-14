@@ -33,6 +33,15 @@ export const BODIES: Record<string, BodyInfo> = {
   nep:  { tag: 'nep',  name: 'Neptune', nativeCenter: 'sun',     synthetic: false, category: 'planet' },
   plu:  { tag: 'plu',  name: 'Pluto',   nativeCenter: 'sun',     synthetic: false, category: 'dwarf' },
   moon: { tag: 'moon', name: 'Moon',    nativeCenter: 'earth',   synthetic: false, category: 'satellite' },
+  ceres:  { tag: 'ceres',  name: 'Ceres',   nativeCenter: 'sun', synthetic: false, category: 'dwarf' },
+  pallas: { tag: 'pallas', name: 'Pallas',  nativeCenter: 'sun', synthetic: false, category: 'asteroid' },
+  juno:   { tag: 'juno',   name: 'Juno',    nativeCenter: 'sun', synthetic: false, category: 'asteroid' },
+  vesta:  { tag: 'vesta',  name: 'Vesta',   nativeCenter: 'sun', synthetic: false, category: 'asteroid' },
+  eros:   { tag: 'eros',   name: 'Eros',    nativeCenter: 'sun', synthetic: false, category: 'asteroid' },
+  chiron: { tag: 'chiron', name: 'Chiron',  nativeCenter: 'sun', synthetic: false, category: 'centaur' },
+  pholus: { tag: 'pholus', name: 'Pholus',  nativeCenter: 'sun', synthetic: false, category: 'centaur' },
+  nessus: { tag: 'nessus', name: 'Nessus',  nativeCenter: 'sun', synthetic: false, category: 'centaur' },
+  lilith: { tag: 'lilith', name: 'Lilith',  nativeCenter: 'sun', synthetic: false, category: 'asteroid' },
 };
 
 /**

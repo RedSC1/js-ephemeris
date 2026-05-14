@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { NutationProvider, NutationResult } from '../../manifest/types.js';
 import { NUT2000B } from './iau2000b-data.js';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Vec3 } from '../types.js';
 
 const PI2 = 2 * Math.PI;

@@ -130,7 +130,12 @@ export class SkyObserver {
     // 第二招：引力偏折 (Gravitational Deflection)
     // ----------------------------------------------------
     if (opt.deflection && tag !== 'earth' && tag !== 'sun') {
-      objPos = applyDeflection(objPos, earthPos, distanceAu);
+      const targetHelio: Vec3 = [
+        objPos[0] + earthPos[0],
+        objPos[1] + earthPos[1],
+        objPos[2] + earthPos[2]
+      ];
+      objPos = applyDeflection(objPos, earthPos, targetHelio, distanceAu);
     }
 
     // ----------------------------------------------------
