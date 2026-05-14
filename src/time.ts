@@ -64,4 +64,16 @@ export class EphemerisTime {
     const jdUTC = date.getTime() / 86400000 + 2440587.5;
     return new EphemerisTime(jdUTC, options);
   }
+
+  /**
+   * 从力学时 JD(TT) 创建，反推 UT
+   * 适用于已知 TT 的场景（如从星历表读取的时间）
+   */
+  static fromTT(jdTT: number, options?: EphemerisTimeOptions): EphemerisTime {
+    // 先用 TT 近似 UT 来估算 Delta-T，再迭代一次
+    const provider = options?.deltaTProvider ?? deltaTByJD;
+    const dt = options?.deltaT ?? provider(jdTT);
+    const jdUT = jdTT - dt / 86400.0;
+    return new EphemerisTime(jdUT, { ...options, deltaT: dt });
+  }
 }
