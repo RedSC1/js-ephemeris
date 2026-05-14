@@ -81,6 +81,11 @@ export class Ephemeris {
     // 默认注册内置解析器
     this.registerResolver(new BuiltinResolver());
 
+    // 注册开普勒轨道 fallback（最低优先级，小行星兜底）
+    import('./manifest/keplerian.js').then(({ KeplerianResolver }) => {
+      this.registerResolver(new KeplerianResolver());
+    });
+
     // 如果提供了 loader 或 baseUrl，注册远程解析器
     if (options?.loader || options?.baseUrl) {
       this.setupRemoteResolver(options);
