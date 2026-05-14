@@ -40,11 +40,6 @@ export interface ObservationResult {
   altitude: number;
 }
 
-// Earth/Moon mass ratio: M_earth / M_moon (DE441 EMRAT)
-const EARTH_MOON_MASS_RATIO = 81.3005682;
-// mu = M_moon / (M_earth + M_moon)
-const MOON_MASS_FRACTION = 1.0 / (1.0 + EARTH_MOON_MASS_RATIO);
-
 /**
  * 高级观测者类：包裹底层引擎，专门处理与地球表面观测者相关的天体测量学修正
  */
@@ -74,21 +69,12 @@ export class SkyObserver {
     
     // ----------------------------------------------------
     // 第零步：获取观测时刻 (jdObs) 的地球真实状态 (位置 + 速度)
-    // EMB → Earth 修正: Earth = EMB - Moon_geocentric * M_moon/(M_earth+M_moon)
+    // 'ear' 已自动做 EMB→Earth 修正
     // ----------------------------------------------------
     const earthState = await this.engine.state('ear', jdObs);
-    const moonState = await this.engine.state('moon', jdObs);
     
-    const earthPos: Vec3 = [
-      earthState[0] - moonState[0] * MOON_MASS_FRACTION,
-      earthState[1] - moonState[1] * MOON_MASS_FRACTION,
-      earthState[2] - moonState[2] * MOON_MASS_FRACTION
-    ];
-    const earthVel: Vec3 = [
-      earthState[3] - moonState[3] * MOON_MASS_FRACTION,
-      earthState[4] - moonState[4] * MOON_MASS_FRACTION,
-      earthState[5] - moonState[5] * MOON_MASS_FRACTION
-    ];
+    const earthPos: Vec3 = [earthState[0], earthState[1], earthState[2]];
+    const earthVel: Vec3 = [earthState[3], earthState[4], earthState[5]];
 
     // ----------------------------------------------------
     // 第一招：光行时修正 (Light-Time Iteration) -> 获取星表位置 (Astrometric Place)

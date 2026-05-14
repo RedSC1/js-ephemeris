@@ -3,7 +3,7 @@
  */
 export type BodyTag =
   | 'sun'
-  | 'mer' | 'ven' | 'ear' | 'mar' | 'jup' | 'sat' | 'ura' | 'nep' | 'plu'
+  | 'mer' | 'ven' | 'ear' | 'emb' | 'mar' | 'jup' | 'sat' | 'ura' | 'nep' | 'plu'
   | 'moon'
   | 'ceres' | 'pallas' | 'juno' | 'vesta' | 'eros'
   | 'chiron' | 'pholus' | 'nessus' | 'lilith'

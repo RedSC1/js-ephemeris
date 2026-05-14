@@ -23,6 +23,11 @@ export const BUILTIN_MANIFEST: Record<string, BuiltinEntry[]> = {
     { jdStart: 2415020, jdEnd: 2451545, variable: 'earth_2415020_2451545_bin_gz' },
     { jdStart: 2451545, jdEnd: 2488070, variable: 'earth_2451545_2488070_bin_gz' }
   ],
+  'emb': [
+    { jdStart: 2378495, jdEnd: 2415020, variable: 'earth_2378495_2415020_bin_gz' },
+    { jdStart: 2415020, jdEnd: 2451545, variable: 'earth_2415020_2451545_bin_gz' },
+    { jdStart: 2451545, jdEnd: 2488070, variable: 'earth_2451545_2488070_bin_gz' }
+  ],
   'mar': [
     { jdStart: 2378495, jdEnd: 2415020, variable: 'mars_2378495_2415020_bin_gz' },
     { jdStart: 2415020, jdEnd: 2451545, variable: 'mars_2415020_2451545_bin_gz' },

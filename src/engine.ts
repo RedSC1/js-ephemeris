@@ -281,6 +281,17 @@ export class Ephemeris {
       return [0, 0, 0, 0, 0, 0];
     }
 
+    // 地球本体：EMB - Moon × μ
+    if (tag === 'ear') {
+      const emb = await this.state('emb', time, options);
+      const moon = await this.state('moon', time, options);
+      const MU = 1.0 / (1.0 + 81.3005682);
+      return [
+        emb[0] - moon[0] * MU, emb[1] - moon[1] * MU, emb[2] - moon[2] * MU,
+        emb[3] - moon[3] * MU, emb[4] - moon[4] * MU, emb[5] - moon[5] * MU,
+      ];
+    }
+
     for (const resolver of this.resolvers) {
       if (resolver.canResolve(tag, time.jdTT)) {
         const result = await resolver.resolve(tag, time.jdTT, { ...options, computeVelocity: true });
@@ -315,21 +326,11 @@ export class Ephemeris {
 
     const time = this.normalizeTime(timeInput);
     
-    // EMB → Earth 修正: 获取地球真实的日心状态
+    // 获取地球真实的日心状态（'ear' 已自动做 EMB→Earth 修正）
     const earthState = await this.state('ear', time, { computeVelocity: true });
-    const moonState = await this.state('moon', time, { computeVelocity: true });
-    const MU = 1.0 / (1.0 + 81.3005682); // M_moon / (M_earth + M_moon), DE441 EMRAT
     
-    const earthPos: Vec3 = [
-      earthState[0] - moonState[0] * MU,
-      earthState[1] - moonState[1] * MU,
-      earthState[2] - moonState[2] * MU
-    ];
-    const earthVel: Vec3 = [
-      earthState[3] - moonState[3] * MU,
-      earthState[4] - moonState[4] * MU,
-      earthState[5] - moonState[5] * MU
-    ];
+    const earthPos: Vec3 = [earthState[0], earthState[1], earthState[2]];
+    const earthVel: Vec3 = [earthState[3], earthState[4], earthState[5]];
 
     // ----------------------------------------------------
     // 光行时修正: 迭代求解 τ，取目标在 t-τ 时刻的状态
