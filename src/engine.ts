@@ -91,6 +91,11 @@ export class Ephemeris {
     // 默认注册内置解析器
     this.registerResolver(new BuiltinResolver());
 
+    // 注册寿星万年历 fallback（中优先级，行星+月亮+冥王星兜底）
+    import('./manifest/sxwnl.js').then(({ SxwnlResolver }) => {
+      this.registerResolver(new SxwnlResolver());
+    });
+
     // 注册开普勒轨道 fallback（最低优先级，小行星兜底）
     import('./manifest/keplerian.js').then(({ KeplerianResolver }) => {
       this.registerResolver(new KeplerianResolver());
@@ -281,17 +286,36 @@ export class Ephemeris {
       return [0, 0, 0, 0, 0, 0];
     }
 
-    // 地球本体：EMB - Moon × μ
+    // 地球本体：EMB - Moon_geocentric × μ
     if (tag === 'ear') {
-      const emb = await this.state('emb', time, options);
-      const moon = await this.state('moon', time, options);
+      const emb = await this.rawState('emb', time, options);
+      const moonGeo = await this.rawState('moon', time, options);
       const MU = 1.0 / (1.0 + 81.3005682);
       return [
-        emb[0] - moon[0] * MU, emb[1] - moon[1] * MU, emb[2] - moon[2] * MU,
-        emb[3] - moon[3] * MU, emb[4] - moon[4] * MU, emb[5] - moon[5] * MU,
+        emb[0] - moonGeo[0] * MU, emb[1] - moonGeo[1] * MU, emb[2] - moonGeo[2] * MU,
+        emb[3] - moonGeo[3] * MU, emb[4] - moonGeo[4] * MU, emb[5] - moonGeo[5] * MU,
       ];
     }
 
+    // 月亮：地心数据 + 地球日心 = 月亮日心
+    if (tag === 'moon') {
+      const moonGeo = await this.rawState('moon', time, options);
+      const earth = await this.state('ear', time, options);
+      return [
+        moonGeo[0] + earth[0], moonGeo[1] + earth[1], moonGeo[2] + earth[2],
+        moonGeo[3] + earth[3], moonGeo[4] + earth[4], moonGeo[5] + earth[5],
+      ];
+    }
+
+    return this.rawState(tag, time, options);
+  }
+
+  /** 获取 resolver 返回的原始状态向量（不做坐标系转换） */
+  private async rawState(
+    tag: BodyTag,
+    time: EphemerisTime,
+    options?: any
+  ): Promise<StateVec> {
     for (const resolver of this.resolvers) {
       if (resolver.canResolve(tag, time.jdTT)) {
         const result = await resolver.resolve(tag, time.jdTT, { ...options, computeVelocity: true });

@@ -122,8 +122,21 @@ export function parseOPM2(buffer: ArrayBuffer): OPM2CenturyData {
   if (version !== 1) throw new Error(`Unsupported OPM2 version: ${version}`);
   
   const bodyId = reader.readUint8();
-  const jdStart = reader.readFloat64();
-  const jdEnd = reader.readFloat64();
+
+  // 检测 header 格式：Mercury (bodyId=1) 使用 int32 offset，其他使用 float64
+  let jdStart: number, jdEnd: number;
+  const JD_J2000 = 2451545.0;
+  
+  if (bodyId === 1) {
+    // Mercury: int32 offset from J2000 格式
+    jdStart = JD_J2000 + reader.readInt32();
+    jdEnd = JD_J2000 + reader.readInt32();
+  } else {
+    // 其他行星: float64 格式
+    jdStart = reader.readFloat64();
+    jdEnd = reader.readFloat64();
+  }
+
   const nSeg = reader.readUint16();
   const degXY = reader.readUint8();
   const degZ = reader.readUint8();

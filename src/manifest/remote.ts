@@ -35,7 +35,7 @@ export interface RemoteResolverOptions {
   loader: DataLoader;
   /** 远程 manifest（描述可用数据） */
   manifest: RemoteManifest;
-  /** LRU 缓存容量，默认 32 */
+  /** LRU 缓存容量，默认 100 */
   cacheSize?: number;
 }
 
@@ -55,7 +55,7 @@ export class RemoteResolver implements PositionResolver {
   constructor(options: RemoteResolverOptions) {
     this.loader = options.loader;
     this.manifest = options.manifest;
-    this.cache = new LRUCache(options.cacheSize ?? 32);
+    this.cache = new LRUCache(options.cacheSize ?? 100);
   }
 
   canResolve(tag: BodyTag, jd: number): boolean {

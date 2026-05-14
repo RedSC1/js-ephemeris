@@ -54,9 +54,9 @@ export const BUILTIN_MANIFEST: Record<string, BuiltinEntry[]> = {
     { jdStart: 2451545, jdEnd: 2488070, variable: 'neptune_2451545_2488070_bin_gz' }
   ],
   'plu': [
-    { jdStart: 2378495, jdEnd: 2415020, variable: 'pluto_2378495_2415020_bin_gz' },
-    { jdStart: 2415020, jdEnd: 2451545, variable: 'pluto_2415020_2451545_bin_gz' },
-    { jdStart: 2451545, jdEnd: 2488070, variable: 'pluto_2451545_2488070_bin_gz' }
+    { jdStart: 2351501, jdEnd: 2388026, variable: 'pluto_2351501_2388026_bin_gz' },
+    { jdStart: 2388026, jdEnd: 2424551, variable: 'pluto_2388026_2424551_bin_gz' },
+    { jdStart: 2424551, jdEnd: 2461076, variable: 'pluto_2424551_2461076_bin_gz' }
   ],
   'moon': [
     { jdStart: 2378495, jdEnd: 2415020, variable: 'moon_2378495_2415020_bin_gz' },
