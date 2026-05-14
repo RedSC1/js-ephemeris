@@ -52,7 +52,7 @@ export class BuiltinResolver implements PositionResolver {
       source: data.magic === 'OPV2' ? 'opv2' as const : 'opm2' as const,
       precision: 'milliarcsec' as const,
       center: tag === 'moon' ? 'earth' : 'sun',
-      frame: 'equatorial' as const
+      frame: 'ICRF / J2000 Equatorial' as const
     };
   }
 

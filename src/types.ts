@@ -19,7 +19,13 @@ export type Vec3 = [number, number, number];
  */
 export type StateVec = [number, number, number, number, number, number];
 
-export type CoordFrame = 'equatorial' | 'ecliptic';
+export type CoordFrame =
+  | 'ICRF / J2000 Equatorial'
+  | 'J2000 Mean Equatorial'
+  | 'J2000 Ecliptic'
+  | 'True Equator of Date'
+  | 'True Ecliptic of Date'
+  | (string & {});
 
 export type CoordCenter = 'sun' | 'earth' | 'emb' | 'topocentric' | (string & {});
 
