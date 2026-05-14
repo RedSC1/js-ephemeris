@@ -40,8 +40,8 @@ export interface ObservationResult {
   altitude: number;
 }
 
-// Earth/Moon mass ratio: M_earth / M_moon
-const EARTH_MOON_MASS_RATIO = 81.30056;
+// Earth/Moon mass ratio: M_earth / M_moon (DE441 EMRAT)
+const EARTH_MOON_MASS_RATIO = 81.3005682;
 // mu = M_moon / (M_earth + M_moon)
 const MOON_MASS_FRACTION = 1.0 / (1.0 + EARTH_MOON_MASS_RATIO);
 

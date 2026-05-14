@@ -311,7 +311,7 @@ export class Ephemeris {
     // EMB → Earth 修正: 获取地球真实的日心状态
     const earthState = await this.state('ear', time, { computeVelocity: true });
     const moonState = await this.state('moon', time, { computeVelocity: true });
-    const MU = 1.0 / (1.0 + 81.30056); // M_moon / (M_earth + M_moon)
+    const MU = 1.0 / (1.0 + 81.3005682); // M_moon / (M_earth + M_moon), DE441 EMRAT
     
     const earthPos: Vec3 = [
       earthState[0] - moonState[0] * MU,
