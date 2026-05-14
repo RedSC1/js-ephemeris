@@ -32,6 +32,8 @@ export interface AstrometricOptions {
   aberration?: boolean;
   /** 是否开启引力偏折修正，默认: false (占星应用通常不需要) */
   deflection?: boolean;
+  /** 是否应用形心修正 (COB)，将系统质心转为行星本体位置。需要配置 COB 数据源。 */
+  cob?: boolean;
 }
 
 export interface EphemerisOptions {
@@ -41,6 +43,8 @@ export interface EphemerisOptions {
   loader?: DataLoader;
   /** 远程数据 manifest（描述远程可用数据的时间范围和路径） */
   remoteManifest?: RemoteManifest;
+  /** COB (形心修正) 数据 manifest */
+  cobManifest?: import('./corrections/cob.js').COBManifest;
   /** LRU 缓存容量，默认 32 */
   cacheSize?: number;
   /** 自定义 Delta-T 提供者 */
@@ -61,11 +65,14 @@ export class Ephemeris {
   private deltaTProvider: DeltaTProvider;
   private precessionProvider: PrecessionProvider;
   private nutationProvider: NutationProvider;
+  private cobProvider: import('./corrections/cob.js').COBProvider | null = null;
+  private engineOptions: EphemerisOptions | undefined;
 
   constructor(options?: EphemerisOptions) {
     this.deltaTProvider = options?.deltaTProvider ?? deltaTByJD;
     this.precessionProvider = options?.precessionProvider ?? new Vondrak2011Provider();
     this.nutationProvider = options?.nutationProvider ?? new IAU2000BProvider();
+    this.engineOptions = options;
     
     if (options?.resolvers) {
       options.resolvers.forEach(r => this.registerResolver(r));
@@ -290,6 +297,7 @@ export class Ephemeris {
       lightTime: true,
       aberration: true,
       deflection: false,
+      cob: false,
       ...options
     };
 
@@ -314,8 +322,19 @@ export class Ephemeris {
     // ----------------------------------------------------
     // 光行时修正: 迭代求解 τ，取目标在 t-τ 时刻的状态
     // ----------------------------------------------------
-    const getTargetState = async (jd: number) => {
-      return await this.state(tag, jd, { computeVelocity: true });
+    const applyCOB = opt.cob === true;
+    const getTargetState = async (jd: number): Promise<StateVec> => {
+      const s = await this.state(tag, jd, { computeVelocity: true });
+      if (applyCOB) {
+        const cobOffset = await this.getCOBOffset(tag, jd);
+        if (cobOffset) {
+          return [
+            s[0] - cobOffset[0], s[1] - cobOffset[1], s[2] - cobOffset[2],
+            s[3] - (cobOffset[3] ?? 0), s[4] - (cobOffset[4] ?? 0), s[5] - (cobOffset[5] ?? 0)
+          ];
+        }
+      }
+      return s;
     };
 
     const ltResult = await applyLightTime(
@@ -451,6 +470,43 @@ export class Ephemeris {
     };
 
     return createSunResult('True Ecliptic of Date', 'sun', zeroPos);
+  }
+
+  /**
+   * 获取 COB 偏移（延迟初始化 COB provider）
+   * @returns 偏移向量，或 null（如果该天体不支持 COB）
+   * @throws 如果用户请求了 COB 但没有配置数据源
+   */
+  private async getCOBOffset(tag: BodyTag, jd: number): Promise<StateVec | null> {
+    const { COBProvider } = await import('./corrections/cob.js');
+
+    if (!COBProvider.hasCOB(tag)) {
+      throw new Error(`No COB data exists for '${tag}'. Only jupiter, saturn, uranus, neptune, pluto have COB corrections.`);
+    }
+
+    // 延迟初始化 COB provider
+    if (!this.cobProvider) {
+      const opts = this.engineOptions;
+      if (!opts?.loader && !opts?.baseUrl) {
+        throw new Error(`COB correction requires a DataLoader. Configure 'baseUrl' or 'loader' in EphemerisOptions.`);
+      }
+
+      let loader: DataLoader;
+      if (opts.loader) {
+        loader = opts.loader;
+      } else {
+        const { FetchLoader } = await import('./loader/fetch.js');
+        loader = new FetchLoader(opts.baseUrl!);
+      }
+
+      const { generateDefaultCOBManifest } = await import('./corrections/cob.js');
+      const manifest = opts.cobManifest ?? generateDefaultCOBManifest();
+
+      this.cobProvider = new COBProvider({ loader, manifest });
+    }
+
+    const offset = await this.cobProvider.getOffset(tag, jd, true);
+    return offset as StateVec;
   }
 
   /**
