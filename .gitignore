@@ -6,3 +6,5 @@ dist/
 /data/
 /scripts/
 dev/
+data_integrated/
+data_integrated_opm2/
