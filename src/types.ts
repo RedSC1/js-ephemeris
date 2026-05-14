@@ -2,6 +2,7 @@
  * 天体标识符
  */
 export type BodyTag =
+  | 'sun'
   | 'mer' | 'ven' | 'ear' | 'mar' | 'jup' | 'sat' | 'ura' | 'nep' | 'plu'
   | 'moon'
   | 'ceres' | 'pallas' | 'juno' | 'vesta' | 'eros'

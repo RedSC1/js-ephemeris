@@ -3,5 +3,6 @@ dist/
 .DS_Store
 .claude/
 .gemini/
-data/
-scripts/
+/data/
+/scripts/
+dev/

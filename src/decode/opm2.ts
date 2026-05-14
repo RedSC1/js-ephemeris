@@ -100,7 +100,7 @@ function decodeMixedWidthIntegers(reader: BinaryReader, nCoeffs: number): Int32A
 
   const integers = new Int32Array(nCoeffs);
   for (let i = 0; i < nCoeffs; i++) {
-    const widthCode = (widthBytes[i >> 2] >> ((i & 3) * 2)) & 0x03;
+    const widthCode = (widthBytes[i >> 2]! >> ((i & 3) * 2)) & 0x03;
     if (widthCode === 0) integers[i] = reader.readInt8();
     else if (widthCode === 1) integers[i] = reader.readInt16();
     else if (widthCode === 2) {
@@ -147,12 +147,12 @@ function findSegment(segments: OPM2Segment[], jd: number): OPM2Segment {
   let lo = 0, hi = segments.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    const seg = segments[mid];
+    const seg = segments[mid]!;
     if (jd < seg.a) hi = mid - 1;
     else if (jd > seg.b) lo = mid + 1;
     else return seg;
   }
-  return segments[Math.max(0, Math.min(segments.length - 1, lo))];
+  return segments[Math.max(0, Math.min(segments.length - 1, lo))]!;
 }
 
 export function evalOPM2(
@@ -170,10 +170,10 @@ export function evalOPM2(
   const cx = new Float64Array(nXY), cy = new Float64Array(nXY), cz = new Float64Array(nZ);
 
   for (let i = 0; i < nXY; i++) {
-    cx[i] = (seg.resCxInt[i] + (ref?.refCxInt[i] ?? 0)) * unit;
-    cy[i] = (seg.resCyInt[i] + (ref?.refCyInt[i] ?? 0)) * unit;
+    cx[i] = (seg.resCxInt[i]! + (ref?.refCxInt[i] ?? 0)) * unit;
+    cy[i] = (seg.resCyInt[i]! + (ref?.refCyInt[i] ?? 0)) * unit;
   }
-  for (let i = 0; i < nZ; i++) cz[i] = seg.fullCzInt[i] * unit;
+  for (let i = 0; i < nZ; i++) cz[i] = seg.fullCzInt[i]! * unit;
 
   const lx = chebEval(cx, x), ly = chebEval(cy, x), lz = chebEval(cz, x);
   const [ux, uy, uz] = seg.u, [vx, vy, vz] = seg.v, [wx, wy, wz] = seg.w;

@@ -16,6 +16,21 @@ import {
 } from './math/coords.js';
 import { Vondrak2011Provider } from './corrections/precession/v11-algorithm.js';
 import { IAU2000BProvider } from './corrections/nutation/iau2000b-algorithm.js';
+import { applyLightTime } from './corrections/light-time.js';
+import { applyAberration } from './corrections/aberration.js';
+import { applyDeflection } from './corrections/deflection.js';
+
+/**
+ * 天体测量学修正选项 (用于 geocentricState)
+ */
+export interface AstrometricOptions {
+  /** 是否开启光行时修正，默认: true */
+  lightTime?: boolean;
+  /** 是否开启光行差修正，默认: true */
+  aberration?: boolean;
+  /** 是否开启引力偏折修正，默认: false (占星应用通常不需要) */
+  deflection?: boolean;
+}
 
 export interface EphemerisOptions {
   /** 数据 CDN 基础路径 */
@@ -70,6 +85,11 @@ export class Ephemeris {
   ): Promise<EphemerisResult> {
     const time = this.normalizeTime(timeInput);
     
+    // 太阳：日心坐标系下为原点，直接构造结果
+    if (tag === 'sun') {
+      return this.buildSunResult(time);
+    }
+
     for (const resolver of this.resolvers) {
       if (resolver.canResolve(tag, time.jdTT)) {
         const result = await resolver.resolve(tag, time.jdTT, options);
@@ -193,6 +213,12 @@ export class Ephemeris {
     options?: any
   ): Promise<StateVec> {
     const time = this.normalizeTime(timeInput);
+
+    // 太阳：日心坐标系下恒为原点，速度为零
+    if (tag === 'sun') {
+      return [0, 0, 0, 0, 0, 0];
+    }
+
     for (const resolver of this.resolvers) {
       if (resolver.canResolve(tag, time.jdTT)) {
         const result = await resolver.resolve(tag, time.jdTT, { ...options, computeVelocity: true });
@@ -212,34 +238,74 @@ export class Ephemeris {
   /**
    * 获取天体的地心真黄道状态 (位置 + 速度)
    * 占星应用的核心方法：返回黄经、黄纬、距离及其变化率
+   * 
+   * 默认包含光行时和光行差修正，返回"视"(apparent) 结果。
    */
   async geocentricState(
     tag: BodyTag,
-    timeInput: number | Date | EphemerisTime
+    timeInput: number | Date | EphemerisTime,
+    options?: AstrometricOptions
   ): Promise<GeocentricEclipticState> {
+    const opt: Required<AstrometricOptions> = {
+      lightTime: true,
+      aberration: true,
+      deflection: false,
+      ...options
+    };
+
     const time = this.normalizeTime(timeInput);
     
-    // 获取目标和地球的完整状态 (位置+速度, J2000/ICRF)
-    const targetState = await this.state(tag, time, { computeVelocity: true });
+    // EMB → Earth 修正: 获取地球真实的日心状态
     const earthState = await this.state('ear', time, { computeVelocity: true });
-    
-    // EMB → Earth 修正 (位置和速度)
     const moonState = await this.state('moon', time, { computeVelocity: true });
     const MU = 1.0 / (1.0 + 81.30056); // M_moon / (M_earth + M_moon)
     
-    // 地心向量 = 目标日心 - 地球真实位置
-    const geoPos: Vec3 = [
-      targetState[0] - (earthState[0] - moonState[0] * MU),
-      targetState[1] - (earthState[1] - moonState[1] * MU),
-      targetState[2] - (earthState[2] - moonState[2] * MU)
+    const earthPos: Vec3 = [
+      earthState[0] - moonState[0] * MU,
+      earthState[1] - moonState[1] * MU,
+      earthState[2] - moonState[2] * MU
     ];
-    const geoVel: Vec3 = [
-      targetState[3] - (earthState[3] - moonState[3] * MU),
-      targetState[4] - (earthState[4] - moonState[4] * MU),
-      targetState[5] - (earthState[5] - moonState[5] * MU)
+    const earthVel: Vec3 = [
+      earthState[3] - moonState[3] * MU,
+      earthState[4] - moonState[4] * MU,
+      earthState[5] - moonState[5] * MU
     ];
-    
+
+    // ----------------------------------------------------
+    // 光行时修正: 迭代求解 τ，取目标在 t-τ 时刻的状态
+    // ----------------------------------------------------
+    const getTargetState = async (jd: number) => {
+      return await this.state(tag, jd, { computeVelocity: true });
+    };
+
+    const ltResult = await applyLightTime(
+      earthPos, earthVel, getTargetState, time.jdTT, opt.lightTime
+    );
+
+    let geoPos = ltResult.pos;
+    let geoVel = ltResult.vel;
+    let distance = ltResult.distance;
+
+    // ----------------------------------------------------
+    // 引力偏折修正: 太阳引力导致光线弯曲 (最大 ~1.75")
+    // ----------------------------------------------------
+    if (opt.deflection && tag !== 'sun') {
+      geoPos = applyDeflection(geoPos, earthPos, distance);
+    }
+
+    // ----------------------------------------------------
+    // 光行差修正: 经典一阶 P' = P + V_earth/c
+    // 对所有太阳系天体适用 (IAU standard: planetary aberration = light-time + stellar aberration)
+    // ----------------------------------------------------
+    if (opt.aberration) {
+      geoPos = applyAberration(geoPos, earthVel, distance);
+      // 光行差对速度的影响是二阶小量，主要修正已通过光行时体现
+      // (取 t-τ 时刻的目标速度而非 t 时刻)
+    }
+
+    // ----------------------------------------------------
     // 岁差+章动矩阵 (J2000 → True Equator of Date)
+    // ----------------------------------------------------
     const pMat = this.precessionProvider.getMatrix(time.jdTT);
     const nut = this.nutationProvider.getNutation(time.jdTT);
     
@@ -294,6 +360,50 @@ export class Ephemeris {
       distSpeed,
       retrograde: lonSpeed < 0
     };
+  }
+
+  /**
+   * 构造太阳的 EphemerisResult
+   * 太阳在日心坐标系下恒为原点，但支持 toGeocentric 等转换
+   */
+  private buildSunResult(time: EphemerisTime): EphemerisResult {
+    const zeroPos: Vec3 = [0, 0, 0];
+
+    const createSunResult = (frameStr: string, centerStr: string, currentRawPos: Vec3): EphemerisResult => {
+      return {
+        xyz: currentRawPos,
+        body: 'sun',
+        jdTT: time.jdTT,
+        jdUT: time.jdUT,
+        deltaT: time.deltaT,
+        center: centerStr,
+        frame: frameStr,
+        precision: 'high',
+        lbr: () => rectToSpherical(currentRawPos),
+        toTrueEcliptic: () => createSunResult('True Ecliptic of Date', centerStr, currentRawPos),
+        toTrueEquatorial: () => createSunResult('True Equator of Date', centerStr, currentRawPos),
+        toJ2000Ecliptic: () => createSunResult('J2000 Ecliptic', centerStr, currentRawPos),
+        toJ2000Equatorial: () => createSunResult('ICRF / J2000 Equatorial', centerStr, currentRawPos),
+        toJ2000MeanEquatorial: () => createSunResult('J2000 Mean Equatorial', centerStr, currentRawPos),
+
+        toGeocentric: async () => {
+          if (centerStr === 'earth') return createSunResult(frameStr, centerStr, currentRawPos);
+          // 地心太阳 = -地球日心位置
+          const earthRes = await this.position('ear', time);
+          const earthRaw = earthRes.toJ2000Equatorial().xyz;
+          const geoSunPos: Vec3 = [-earthRaw[0], -earthRaw[1], -earthRaw[2]];
+          return createSunResult(frameStr, 'earth', geoSunPos);
+        },
+
+        toHeliocentric: async () => {
+          if (centerStr === 'sun') return createSunResult(frameStr, centerStr, currentRawPos);
+          // 日心太阳 = [0,0,0]
+          return createSunResult(frameStr, 'sun', zeroPos);
+        }
+      };
+    };
+
+    return createSunResult('True Ecliptic of Date', 'sun', zeroPos);
   }
 
   /**

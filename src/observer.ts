@@ -1,9 +1,12 @@
-import type { BodyTag, Observer, EphemerisResult, Vec3 } from './types.js';
+import type { BodyTag, Observer, Vec3 } from './types.js';
 import type { Ephemeris } from './engine.js';
 import type { RefractionProvider } from './manifest/types.js';
 import { getObserverGeocentricVector, earthRotationAngle } from './math/topocentric.js';
-import { rotX, rotY, rotZ, mulMatVec, matMul, rectToSpherical } from './math/coords.js';
+import { rotY, rotZ, mulMatVec, matMul, rectToSpherical } from './math/coords.js';
 import { StandardRefractionProvider } from './corrections/refraction/standard.js';
+import { applyLightTime } from './corrections/light-time.js';
+import { applyAberration } from './corrections/aberration.js';
+import { applyDeflection } from './corrections/deflection.js';
 
 export interface ObservationOptions {
   /** 是否开启光行时修正 (Light-time correction)，默认: true */
@@ -37,15 +40,10 @@ export interface ObservationResult {
   altitude: number;
 }
 
-const LIGHT_TIME_DAYS_PER_AU = 0.00577551833; // 1 AU / C
-
 // Earth/Moon mass ratio: M_earth / M_moon
 const EARTH_MOON_MASS_RATIO = 81.30056;
 // mu = M_moon / (M_earth + M_moon)
 const MOON_MASS_FRACTION = 1.0 / (1.0 + EARTH_MOON_MASS_RATIO);
-
-// Shapiro delay constant: 2 * GM_sun / c^3 (in days)
-const SHAPIRO_CONST_DAYS = 9.8509e-6 / 86400; // ~9.85 μs converted to days
 
 /**
  * 高级观测者类：包裹底层引擎，专门处理与地球表面观测者相关的天体测量学修正
@@ -98,120 +96,48 @@ export class SkyObserver {
     let objPos: Vec3 = [0, 0, 0];
     let distanceAu = 0;
     
-    if (tag === 'earth' || tag === 'moon') {
-      // 地月系内通常忽略光行时和周年光行差（对于极致月食计算，月球光行时<2秒，视需处理）
-      // 这里简化处理，直接取几何位置
-      const rawPos = await this.engine.position(tag, jdObs);
-      const geoPos = await rawPos.toGeocentric();
-      objPos = geoPos.toJ2000Equatorial().xyz;
-      distanceAu = Math.sqrt(objPos[0]*objPos[0] + objPos[1]*objPos[1] + objPos[2]*objPos[2]);
+    if (tag === 'earth') {
+      // 地球自身：地心位置为原点
+      objPos = [0, 0, 0];
+      distanceAu = 0;
     } else {
-      let dt = 0;
-      let iterations = 0;
-      do {
-        const jdEval = jdObs - dt;
-        const rawRes = await this.engine.position(tag, jdEval);
+      // 所有天体（含太阳、月球）都走光行时修正
+      const getTargetState = async (jd: number) => {
+        const rawRes = await this.engine.position(tag, jd);
         const rawPosJ2000 = rawRes.toJ2000Equatorial().xyz;
         
-        // 星表向量 = 目标在(t-dt)的日心位置 - 地球在(t)的日心位置
-        objPos = [
-          rawPosJ2000[0] - earthPos[0],
-          rawPosJ2000[1] - earthPos[1],
-          rawPosJ2000[2] - earthPos[2]
-        ];
-        
-        const newDist = Math.sqrt(objPos[0]*objPos[0] + objPos[1]*objPos[1] + objPos[2]*objPos[2]);
-        const newDt = newDist * LIGHT_TIME_DAYS_PER_AU;
-        
-        if (!opt.lightTime) {
-          distanceAu = newDist;
-          break; // 如果没开启光行时，算一次几何距离就退出
+        // applyLightTime 期望日心位置，月球数据是地心的需要转换
+        if (rawRes.center === 'earth') {
+          // 地心 → 伪日心: 加上观测时刻的地球位置
+          return [
+            rawPosJ2000[0] + earthPos[0],
+            rawPosJ2000[1] + earthPos[1],
+            rawPosJ2000[2] + earthPos[2],
+            0, 0, 0
+          ] as [number, number, number, number, number, number];
         }
-        
-        // Shapiro delay (relativistic gravitational time delay)
-        const rEarth = Math.sqrt(earthPos[0]*earthPos[0] + earthPos[1]*earthPos[1] + earthPos[2]*earthPos[2]);
-        const rTarget = Math.sqrt(rawPosJ2000[0]*rawPosJ2000[0] + rawPosJ2000[1]*rawPosJ2000[1] + rawPosJ2000[2]*rawPosJ2000[2]);
-        const shapiroDelay = SHAPIRO_CONST_DAYS * Math.log((rEarth + rTarget + newDist) / (rEarth + rTarget - newDist));
-        const newDtTotal = newDt + shapiroDelay;
-        
-        if (Math.abs(newDtTotal - dt) < 1e-6 || iterations > 3) {
-          distanceAu = newDist;
-          break;
-        }
-        dt = newDtTotal;
-        iterations++;
-      } while (true);
+        return [rawPosJ2000[0], rawPosJ2000[1], rawPosJ2000[2], 0, 0, 0] as [number, number, number, number, number, number];
+      };
+
+      const ltResult = await applyLightTime(
+        earthPos, earthVel, getTargetState, jdObs, opt.lightTime
+      );
+      objPos = ltResult.pos;
+      distanceAu = ltResult.distance;
     }
 
     // ----------------------------------------------------
     // 第二招：引力偏折 (Gravitational Deflection)
     // ----------------------------------------------------
     if (opt.deflection && tag !== 'earth' && tag !== 'sun') {
-      // 太阳引力偏折常数 (2 * G * M_sun / c^2) ，单位：AU
-      const SCHWARZSCHILD_RADIUS_AU = 1.97412574336e-8; 
-      
-      // 因为 OPM2 数据除月球外都是日心的，所以 earthPos 就是地球相对于太阳的坐标
-      // 观测者(地球)到太阳的向量就是 -earthPos
-      const sunVec: Vec3 = [-earthPos[0], -earthPos[1], -earthPos[2]];
-      const E = Math.sqrt(sunVec[0]*sunVec[0] + sunVec[1]*sunVec[1] + sunVec[2]*sunVec[2]);
-      const q: Vec3 = [sunVec[0]/E, sunVec[1]/E, sunVec[2]/E]; // 指向太阳的单位向量
-      
-      const p: Vec3 = [objPos[0]/distanceAu, objPos[1]/distanceAu, objPos[2]/distanceAu]; // 指向目标的单位向量
-      
-      const pDotQ = p[0]*q[0] + p[1]*q[1] + p[2]*q[2];
-      
-      // 太阳圆盘视半径约为 0.26 度。在这个边缘，pDotQ 约为 -0.9999897
-      // 为了防止 1.75" 的瞬移，我们在太阳圆盘内部应用一个线性的衰减系数
-      const GRAZING_THRESHOLD = -0.9999897;
-      
-      if (pDotQ > -0.99999999) {
-        // 计算平滑系数：在太阳外部为 1.0，在太阳内部从边缘的 1.0 线性衰减到中心的 0
-        let attenuationFactor = 1.0;
-        if (pDotQ < GRAZING_THRESHOLD) {
-          attenuationFactor = (1.0 + pDotQ) / (1.0 + GRAZING_THRESHOLD);
-        }
-
-        const factor = (SCHWARZSCHILD_RADIUS_AU / E / (1.0 + pDotQ)) * attenuationFactor;
-        
-        const dp: Vec3 = [
-          factor * (q[0] - pDotQ * p[0]),
-          factor * (q[1] - pDotQ * p[1]),
-          factor * (q[2] - pDotQ * p[2])
-        ];
-        
-        // 加上偏折修正，并重新恢复原始距离
-        const pDeflected: Vec3 = [p[0] + dp[0], p[1] + dp[1], p[2] + dp[2]];
-        const pDefLen = Math.sqrt(pDeflected[0]*pDeflected[0] + pDeflected[1]*pDeflected[1] + pDeflected[2]*pDeflected[2]);
-        
-        objPos = [
-          (pDeflected[0] / pDefLen) * distanceAu,
-          (pDeflected[1] / pDefLen) * distanceAu,
-          (pDeflected[2] / pDefLen) * distanceAu
-        ];
-      }
+      objPos = applyDeflection(objPos, earthPos, distanceAu);
     }
 
     // ----------------------------------------------------
     // 第三招：光行差 (Aberration) -> 获取视位置 (Apparent Place in J2000)
     // ----------------------------------------------------
-    if (opt.aberration && tag !== 'earth' && tag !== 'moon') {
-      // 经典光行差矢量加法: P' = P + V_earth / c
-      const c_au_day = 1.0 / LIGHT_TIME_DAYS_PER_AU; // 约 173.14 AU/day
-      
-      // 先将目标向量归一化为单位方向向量
-      const u: Vec3 = [objPos[0]/distanceAu, objPos[1]/distanceAu, objPos[2]/distanceAu];
-      const ve: Vec3 = [earthVel[0]/c_au_day, earthVel[1]/c_au_day, earthVel[2]/c_au_day];
-      
-      // 合成视方向向量 P' = u + v_e
-      const apparentU: Vec3 = [u[0] + ve[0], u[1] + ve[1], u[2] + ve[2]];
-      
-      // 将合成后的方向向量拉长回原来的物理距离 (光行差只改变方向，不改变距离的定义)
-      const apparentLen = Math.sqrt(apparentU[0]*apparentU[0] + apparentU[1]*apparentU[1] + apparentU[2]*apparentU[2]);
-      objPos = [
-        (apparentU[0] / apparentLen) * distanceAu,
-        (apparentU[1] / apparentLen) * distanceAu,
-        (apparentU[2] / apparentLen) * distanceAu
-      ];
+    if (opt.aberration && tag !== 'earth') {
+      objPos = applyAberration(objPos, earthVel, distanceAu);
     }
 
     // ----------------------------------------------------

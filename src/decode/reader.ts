@@ -39,6 +39,12 @@ export class BinaryReader {
     return val;
   }
 
+  readUint32(): number {
+    const val = this.view.getUint32(this.offset, true);
+    this.offset += 4;
+    return val;
+  }
+
   readFloat64(): number {
     const val = this.view.getFloat64(this.offset, true);
     this.offset += 8;
