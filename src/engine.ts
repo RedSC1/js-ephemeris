@@ -55,6 +55,8 @@ export interface EphemerisOptions {
   precessionProvider?: PrecessionProvider;
   /** 章动模型提供者 */
   nutationProvider?: NutationProvider;
+  /** geocentricState 的默认修正选项 */
+  astrometric?: AstrometricOptions;
 }
 
 /**
@@ -67,12 +69,20 @@ export class Ephemeris {
   private nutationProvider: NutationProvider;
   private cobProvider: import('./corrections/cob.js').COBProvider | null = null;
   private engineOptions: EphemerisOptions | undefined;
+  private astrometricDefaults: Required<AstrometricOptions>;
 
   constructor(options?: EphemerisOptions) {
     this.deltaTProvider = options?.deltaTProvider ?? deltaTByJD;
     this.precessionProvider = options?.precessionProvider ?? new Vondrak2011Provider();
     this.nutationProvider = options?.nutationProvider ?? new IAU2000BProvider();
     this.engineOptions = options;
+    this.astrometricDefaults = {
+      lightTime: true,
+      aberration: true,
+      deflection: false,
+      cob: false,
+      ...options?.astrometric
+    };
     
     if (options?.resolvers) {
       options.resolvers.forEach(r => this.registerResolver(r));
@@ -299,10 +309,7 @@ export class Ephemeris {
     options?: AstrometricOptions
   ): Promise<GeocentricEclipticState> {
     const opt: Required<AstrometricOptions> = {
-      lightTime: true,
-      aberration: true,
-      deflection: false,
-      cob: false,
+      ...this.astrometricDefaults,
       ...options
     };
 
