@@ -30,7 +30,7 @@ export interface AstrometricOptions {
   lightTime?: boolean;
   /** 是否开启光行差修正，默认: true */
   aberration?: boolean;
-  /** 是否开启引力偏折修正，默认: false (占星应用通常不需要) */
+  /** 是否开启引力偏折修正，默认: false */
   deflection?: boolean;
   /** 是否应用形心修正 (COB)，将系统质心转为行星本体位置。需要配置 COB 数据源。 */
   cob?: boolean;
@@ -91,9 +91,9 @@ export class Ephemeris {
     // 默认注册内置解析器
     this.registerResolver(new BuiltinResolver());
 
-    // 注册寿星万年历 fallback（中优先级，行星+月亮+冥王星兜底）
-    import('./manifest/sxwnl.js').then(({ SxwnlResolver }) => {
-      this.registerResolver(new SxwnlResolver());
+    // 注册 Moshier PLAN404 fallback（优先级 20，全行星+月球兜底）
+    import('./moshier/resolver.js').then(({ MoshierResolver }) => {
+      this.registerResolver(new MoshierResolver());
     });
 
     // 注册开普勒轨道 fallback（最低优先级，小行星兜底）
@@ -136,9 +136,66 @@ export class Ephemeris {
   /**
    * 注册一个新的解析器，并按优先级重新排序
    */
+  /**
+   * 注册一个新的解析器，并按优先级重新排序。
+   * 同优先级时，先注册的优先（稳定排序）。
+   */
   registerResolver(resolver: PositionResolver) {
     this.resolvers.push(resolver);
+    // stable sort: 同优先级保持注册顺序
     this.resolvers.sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * 加载内联 Base64 数据（gzip 压缩的 OPM2/OPV2 二进制）
+   * 
+   * 允许用户将额外的世纪数据直接嵌入代码中，无需配置 loader 或 CDN。
+   * 数据格式与内置数据相同：gzip 压缩的 OPM2 或 OPV2 二进制文件的 Base64 编码。
+   * 
+   * @param tag - 天体标识 (如 'mars', 'ceres')
+   * @param base64Data - gzip 压缩的 OPM2/OPV2 文件的 Base64 字符串
+   * 
+   * @example
+   * ```typescript
+   * // 将 mars_2341972_2378495.bin.gz 转为 base64 后嵌入
+   * await eph.loadInlineData('mar', marsBase64String);
+   * ```
+   */
+  async loadInlineData(tag: BodyTag, base64Data: string): Promise<void> {
+    const { decodeBuiltinData } = await import('./loader/builtin.js');
+    const { parseOPM2, evalOPM2 } = await import('./decode/opm2.js');
+    const { parseOPV2, evalOPV2 } = await import('./decode/opv2.js');
+
+    const buffer = await decodeBuiltinData(base64Data);
+    const view = new DataView(buffer);
+    const magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+
+    const isOPV2 = magic === 'OPV2';
+    const parsed = isOPV2 ? parseOPV2(buffer) : parseOPM2(buffer);
+    const jdStart = parsed.jdStart;
+    const jdEnd = parsed.jdEnd;
+
+    // 创建一个临时 resolver 来服务这段数据
+    const inlineResolver: PositionResolver = {
+      name: `inline-${tag}-${jdStart}`,
+      priority: 55, // 高于 Builtin(50)，用户显式加载的优先
+      canResolve: (t, jd) => t === tag && jd >= jdStart && jd <= jdEnd,
+      resolve: async (t, jd, options) => {
+        const computeVelocity = options?.computeVelocity === true;
+        const state = isOPV2
+          ? evalOPV2(jd, parsed as any, computeVelocity)
+          : evalOPM2(jd, parsed as any, null, computeVelocity);
+        return {
+          state,
+          source: isOPV2 ? 'opv2' : 'opm2',
+          precision: 'milliarcsec',
+          center: tag === 'moon' ? 'earth' : 'sun',
+          frame: 'ICRF / J2000 Equatorial',
+        };
+      },
+    };
+
+    this.registerResolver(inlineResolver);
   }
 
   /**
@@ -261,7 +318,7 @@ export class Ephemeris {
             };
           };
 
-          // 引擎默认返回当期真黄道坐标 (大多数现代历法和占星应用的默认选择)
+          // 引擎默认返回当期真黄道坐标
           return createResult('True Ecliptic of Date', result.center, rawXyz);
         }
       }
@@ -334,7 +391,7 @@ export class Ephemeris {
 
   /**
    * 获取天体的地心真黄道状态 (位置 + 速度)
-   * 占星应用的核心方法：返回黄经、黄纬、距离及其变化率
+   * 返回黄经、黄纬、距离及其变化率。
    * 
    * 默认包含光行时和光行差修正，返回"视"(apparent) 结果。
    */

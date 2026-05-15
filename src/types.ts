@@ -45,7 +45,7 @@ export interface Observer {
 }
 
 /**
- * 地心黄道状态 (占星用)
+ * 地心黄道状态
  */
 export interface GeocentricEclipticState {
   /** 地心真黄经 (度) [0, 360) */

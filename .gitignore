@@ -8,3 +8,7 @@ dist/
 dev/
 data_integrated/
 data_integrated_opm2/
+
+# 寿星万年历 (坐标系 bug 待修复)
+src/manifest/sxwnl.ts
+src/data/sxwnl-coefficients.ts

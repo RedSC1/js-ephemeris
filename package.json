@@ -1,19 +1,51 @@
 {
   "name": "js-ephemeris",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.1",
+  "description": "High-precision solar system ephemeris engine. Zero dependencies, Browser & Node.js.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./moshier": {
+      "types": "./dist/moshier/index.d.ts",
+      "import": "./dist/moshier/index.js"
+    },
+    "./loader/node": {
+      "types": "./dist/loader/node.d.ts",
+      "import": "./dist/loader/node.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RedSC1/js-ephemeris.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
+  "keywords": [
+    "ephemeris",
+    "astronomy",
+    "planetary",
+    "solar-system",
+    "de441",
+    "moshier",
+    "chebyshev",
+    "celestial-mechanics"
+  ],
+  "author": "RedSC1",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/RedSC1/js-ephemeris/issues"
   },

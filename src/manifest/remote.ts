@@ -50,7 +50,7 @@ export class RemoteResolver implements PositionResolver {
   private loader: DataLoader;
   private manifest: RemoteManifest;
   private cache: LRUCache<string, CenturyData>;
-  private loading = new Map<string, Promise<CenturyData | null>>();
+  private loading = new Map<string, Promise<CenturyData>>();
 
   constructor(options: RemoteResolverOptions) {
     this.loader = options.loader;
@@ -72,7 +72,6 @@ export class RemoteResolver implements PositionResolver {
     if (!entry) return null;
 
     const data = await this.loadData(entry);
-    if (!data) return null;
 
     const computeVelocity = options?.computeVelocity === true;
 
@@ -92,7 +91,7 @@ export class RemoteResolver implements PositionResolver {
     };
   }
 
-  private async loadData(entry: RemoteManifestEntry): Promise<CenturyData | null> {
+  private async loadData(entry: RemoteManifestEntry): Promise<CenturyData> {
     const cacheKey = entry.path;
 
     // 1. 查缓存
@@ -104,7 +103,7 @@ export class RemoteResolver implements PositionResolver {
       return this.loading.get(cacheKey)!;
     }
 
-    // 3. 加载
+    // 3. 加载（失败时直接抛异常，不静默降级）
     const promise = this.doLoad(entry);
     this.loading.set(cacheKey, promise);
 
@@ -116,30 +115,25 @@ export class RemoteResolver implements PositionResolver {
     }
   }
 
-  private async doLoad(entry: RemoteManifestEntry): Promise<CenturyData | null> {
-    try {
-      const buffer = await this.loader.load(entry.path);
+  private async doLoad(entry: RemoteManifestEntry): Promise<CenturyData> {
+    const buffer = await this.loader.load(entry.path);
 
-      // 根据 magic 自动选择解码器
-      const magic = String.fromCharCode(
-        new Uint8Array(buffer)[0]!,
-        new Uint8Array(buffer)[1]!,
-        new Uint8Array(buffer)[2]!,
-        new Uint8Array(buffer)[3]!
-      );
+    // 根据 magic 自动选择解码器
+    const magic = String.fromCharCode(
+      new Uint8Array(buffer)[0]!,
+      new Uint8Array(buffer)[1]!,
+      new Uint8Array(buffer)[2]!,
+      new Uint8Array(buffer)[3]!
+    );
 
-      let data: CenturyData;
-      if (magic === 'OPV2') {
-        data = parseOPV2(buffer);
-      } else {
-        data = parseOPM2(buffer);
-      }
-
-      this.cache.set(entry.path, data);
-      return data;
-    } catch (e) {
-      console.error(`远程数据加载失败 [${entry.path}]:`, e);
-      return null;
+    let data: CenturyData;
+    if (magic === 'OPV2') {
+      data = parseOPV2(buffer);
+    } else {
+      data = parseOPM2(buffer);
     }
+
+    this.cache.set(entry.path, data);
+    return data;
   }
 }

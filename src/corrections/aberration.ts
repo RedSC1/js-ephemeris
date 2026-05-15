@@ -7,10 +7,18 @@ import { LIGHT_TIME_DAYS_PER_AU } from './light-time.js';
 const C_AU_DAY = 1.0 / LIGHT_TIME_DAYS_PER_AU;
 
 /**
- * 经典光行差修正 (一阶近似)
+ * 相对论光行差修正 (完整 Lorentz 变换)
  * 
  * 将星表方向 (astrometric) 修正为视方向 (apparent)。
- * 公式: u' = u + V_earth / c (归一化后恢复距离)
+ * 使用完整的狭义相对论公式，精度优于 0.001"。
+ * 
+ * 公式 (IERS Conventions 2010, eq. 7.40):
+ *   u' = (u/γ + β + (u·β/(1+1/γ)) * β) / (1 + u·β)
+ * 
+ * 其中 β = V_earth/c, γ = 1/√(1-β²)
+ * 
+ * 一阶近似 (|β|≈10⁻⁴): u' ≈ u + β - (u·β)u
+ * 相对论修正项 (二阶): ~(v/c)² ≈ 0.001"
  * 
  * @param pos 地心位置向量 (AU)
  * @param earthVel 地球日心速度 (AU/day)
@@ -19,21 +27,34 @@ const C_AU_DAY = 1.0 / LIGHT_TIME_DAYS_PER_AU;
  */
 export function applyAberration(pos: Vec3, earthVel: Vec3, distance: number): Vec3 {
   // 单位方向向量
-  const u: Vec3 = [pos[0] / distance, pos[1] / distance, pos[2] / distance];
+  const invD = 1 / distance;
+  const u0 = pos[0] * invD, u1 = pos[1] * invD, u2 = pos[2] * invD;
 
-  // 地球速度 / 光速 (β 向量)
-  const beta: Vec3 = [earthVel[0] / C_AU_DAY, earthVel[1] / C_AU_DAY, earthVel[2] / C_AU_DAY];
+  // β = V_earth / c
+  const invC = 1 / C_AU_DAY;
+  const b0 = earthVel[0] * invC, b1 = earthVel[1] * invC, b2 = earthVel[2] * invC;
 
-  // 合成视方向
-  const apparent: Vec3 = [u[0] + beta[0], u[1] + beta[1], u[2] + beta[2]];
+  // β² 和 γ
+  const beta2 = b0 * b0 + b1 * b1 + b2 * b2;
+  const gamma = 1 / Math.sqrt(1 - beta2);
+  const invGamma = 1 / gamma;
+
+  // u · β
+  const uDotBeta = u0 * b0 + u1 * b1 + u2 * b2;
+
+  // 相对论光行差公式:
+  // u' = (u/γ + β + (u·β / (1 + 1/γ)) * β) / (1 + u·β)
+  const f = uDotBeta / (1 + invGamma);  // 二阶修正因子
+  const denom = 1 / (1 + uDotBeta);
+
+  const up0 = (u0 * invGamma + b0 + f * b0) * denom;
+  const up1 = (u1 * invGamma + b1 + f * b1) * denom;
+  const up2 = (u2 * invGamma + b2 + f * b2) * denom;
 
   // 归一化并恢复距离
-  const len = Math.sqrt(apparent[0] * apparent[0] + apparent[1] * apparent[1] + apparent[2] * apparent[2]);
-  return [
-    (apparent[0] / len) * distance,
-    (apparent[1] / len) * distance,
-    (apparent[2] / len) * distance
-  ];
+  const len = Math.sqrt(up0 * up0 + up1 * up1 + up2 * up2);
+  const scale = distance / len;
+  return [up0 * scale, up1 * scale, up2 * scale];
 }
 
 /**
@@ -77,7 +98,7 @@ export function applyAberrationToVelocity(
   const len = Math.sqrt(apparent[0] * apparent[0] + apparent[1] * apparent[1] + apparent[2] * apparent[2]);
   
   // 速度中的径向分量不受光行差影响，横向分量按同比例缩放
-  // 简化：直接返回原始速度 (光行差对速度的修正 < 0.001 deg/day，对占星足够)
+  // 简化：直接返回原始速度 (光行差对速度的修正 < 0.001 deg/day)
   // 如果需要更高精度，可以用数值微分
   return vel;
 }
