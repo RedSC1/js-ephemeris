@@ -64,9 +64,12 @@ export interface EphemerisOptions {
  */
 export class Ephemeris {
   private resolvers: PositionResolver[] = [];
-  private deltaTProvider: DeltaTProvider;
-  private precessionProvider: PrecessionProvider;
-  private nutationProvider: NutationProvider;
+  /** Delta-T 提供者 (TT − UT, 秒) */
+  readonly deltaTProvider: DeltaTProvider;
+  /** 岁差矩阵提供者 */
+  readonly precessionProvider: PrecessionProvider;
+  /** 章动提供者 */
+  readonly nutationProvider: NutationProvider;
   private cobProvider: import('./corrections/cob.js').COBProvider | null = null;
   private engineOptions: EphemerisOptions | undefined;
   private astrometricDefaults: Required<AstrometricOptions>;
