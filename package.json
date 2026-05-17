@@ -17,6 +17,10 @@
     "./loader/node": {
       "types": "./dist/loader/node.d.ts",
       "import": "./dist/loader/node.js"
+    },
+    "./stars/fixed-star": {
+      "types": "./dist/stars/fixed-star.d.ts",
+      "import": "./dist/stars/fixed-star.js"
     }
   },
   "files": [
