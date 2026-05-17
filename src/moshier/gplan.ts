@@ -757,13 +757,7 @@ export function gmoon(
   let lonAS = polLon + LP_equinox;
   if (lonAS < -6.48e5) lonAS += 1.296e6;
   if (lonAS > 6.48e5) lonAS -= 1.296e6;
-  let lon = STR * lonAS; // radians, ecliptic of date
-
-  // DE441 潮汐加速度修正
-  // ELP2000-85 内置: −23.895 "/cy² (Chapront-Touzé & Chapront 1988)
-  // DE441 (Park et al. 2021):   −25.936 "/cy²
-  // Δ = −2.041 "/cy² → 黄经修正 ΔL = Δ × T²
-  lon -= 2.041 * STR * ((jd - J2000) / 36525.0) ** 2;
+  const lon = STR * lonAS; // radians, ecliptic of date
 
   // 2. 纬度 (ecliptic of date)
   const lat = STR * g1plan(jd, moonlatTbl);
