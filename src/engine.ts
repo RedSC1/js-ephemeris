@@ -6,16 +6,8 @@ import type { DataLoader } from './loader/interface.js';
 import type { RemoteManifest } from './manifest/remote.js';
 import { deltaTByJD } from './corrections/delta-t.js';
 import { BuiltinResolver } from './manifest/builtin.js';
-import { 
-  rectToSpherical, 
-  equatorialJ2000ToEclipticJ2000, 
-  eclipticJ2000ToEquatorialJ2000,
-  mulMatVec,
-  matMul,
-  rotX,
-  rotY,
-  rotZ
-} from './math/coords.js';
+import { rectToSpherical, mulMatVec, matMul, rotX } from './math/coords.js';
+import { nutationMatrix, projectIcrfToFrame } from './coordinates/index.js';
 import { Vondrak2011Provider } from './corrections/precession/v11-algorithm.js';
 import { IAU2000BProvider } from './corrections/nutation/iau2000b-algorithm.js';
 import { applyLightTime } from './corrections/light-time.js';
@@ -227,47 +219,14 @@ export class Ephemeris {
           const nut = this.nutationProvider.getNutation(time.jdTT);
 
           // 构造章动矩阵 (直接三角函数展开，避免 R1·R3·R1 级联的参考系不兼容问题)
-          const cobm = Math.cos(nut.mobl), sobm = Math.sin(nut.mobl);
-          const cobt = Math.cos(nut.tobl), sobt = Math.sin(nut.tobl);
-          const cpsi = Math.cos(nut.dpsi), spsi = Math.sin(nut.dpsi);
-          const nMat = [
-            [cpsi,            -spsi * cobm,                    -spsi * sobm],
-            [spsi * cobt,      cpsi * cobm * cobt + sobm * sobt, cpsi * sobm * cobt - cobm * sobt],
-            [spsi * sobt,      cpsi * cobm * sobt - sobm * cobt, cpsi * sobm * sobt + cobm * cobt]
-          ];
+          const nMat = nutationMatrix(nut);
 
-          // 构造总的平->真赤道旋转矩阵: NP = N * P
-          const npMat = matMul(nMat, pMat);
+          const frameContext = { precessionMatrix: pMat, nutation: nut };
 
           // 闭包内的纯函数：从基准的 ICRF/GCRS 赤道坐标 (rawXyz) 转换到任意 5 种坐标系之一
           const getPosForFrame = (targetFrame: string, basePos: Vec3): Vec3 => {
-            if (targetFrame === 'ICRF / J2000 Equatorial') return basePos;
-            if (targetFrame === 'J2000 Mean Equatorial') {
-              // ICRF/GCRS → 动力学 J2000 mean equator (经过 frame bias)
-              // 使用 pMat 中已包含的 bias，但这里需要单独的 bias 矩阵
-              // Frame bias: B 矩阵 (一阶近似, IERS 2010 Eqs. 5.21, 5.33)
-              const DX = -0.016617 * 4.848136811095359935899141e-6;
-              const DE = -0.0068192 * 4.848136811095359935899141e-6;
-              const DR = -0.0146 * 4.848136811095359935899141e-6;
-              return [
-                basePos[0] - basePos[1] * DR + basePos[2] * DX,
-                basePos[0] * DR + basePos[1] + basePos[2] * DE,
-                -basePos[0] * DX - basePos[1] * DE + basePos[2]
-              ];
-            }
-            if (targetFrame === 'J2000 Ecliptic') {
-              // ICRF → frame bias → 动力学 J2000 equatorial → ε₀ 旋转 → 动力学 J2000 ecliptic
-              const meanEq = getPosForFrame('J2000 Mean Equatorial', basePos);
-              return equatorialJ2000ToEclipticJ2000(meanEq);
-            }
-            
-            const trueEqPos = mulMatVec(npMat, basePos);
-            if (targetFrame === 'True Equator of Date') return trueEqPos;
-            if (targetFrame === 'True Ecliptic of Date') return mulMatVec(rotX(-nut.tobl), trueEqPos);
-            
             if (targetFrame === 'Horizontal') return basePos;
-
-            return basePos; // 理论上不可达
+            return projectIcrfToFrame(basePos, targetFrame, frameContext);
           };
 
           // 内部工厂函数：根据目标参考系生成结果对象

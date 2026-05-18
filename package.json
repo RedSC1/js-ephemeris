@@ -18,6 +18,10 @@
       "types": "./dist/loader/node.d.ts",
       "import": "./dist/loader/node.js"
     },
+    "./coordinates": {
+      "types": "./dist/coordinates/index.d.ts",
+      "import": "./dist/coordinates/index.js"
+    },
     "./stars/fixed-star": {
       "types": "./dist/stars/fixed-star.d.ts",
       "import": "./dist/stars/fixed-star.js"
