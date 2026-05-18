@@ -131,22 +131,34 @@ export class FixedStar {
 
 // ─── 常用恒星数据 ────────────────────────────────────────
 
-/** 角宿一 Spica (α Vir, HIP 65474) — Hipparcos 2007 */
+/** 角宿一 Spica (α Vir, HIP 65474) — SIMBAD/Hipparcos 2007 */
 export const SPICA: FixedStarData = {
-  raJ2000:        201.298247,   // 13h 25m 11.579s
-  decJ2000:       -11.161319,   // −11° 09′ 40.75″
-  pmRa:           -42.35,       // mas/yr
-  pmDec:          -30.67,       // mas/yr
-  parallax:        13.06,       // mas
-  radialVelocity:   1.0,        // km/s (approximate)
+  raJ2000:        201.298247375, // 13h 25m 11.57937s
+  decJ2000:       -11.161319472, // −11° 09′ 40.7501″
+  pmRa:           -42.35,        // mas/yr
+  pmDec:          -30.67,        // mas/yr
+  parallax:        13.06,        // mas
+  radialVelocity:  -3.31,        // km/s
 };
 
-/** 银心 Sgr A* — Reid & Brunthaler (2004) */
-export const GALACTIC_CENTER: FixedStarData = {
-  raJ2000:        266.41683,    // 17h 45m 40.04s
-  decJ2000:       -29.00778,    // −29° 00′ 28.1″
-  pmRa:             0,          // mas/yr (极远, 可忽略)
+/** J2000 银心方向锚点，用于 Galactic Center = 0 Sagittarius ayanamsa */
+export const J2000_GALACTIC_CENTER_DIRECTION: FixedStarData = {
+  raJ2000:        266.4168371,  // 17h 45m 40.0409s
+  decJ2000:       -29.0078106,  // −29° 00′ 28.118″
+  pmRa:             0,
   pmDec:            0,
-  parallax:         0,          // mas (8 kpc, 不可测)
+  parallax:         0,
   radialVelocity:   0,
 };
+
+/** Sgr A* apparent radio source — Reid & Brunthaler (2004) */
+export const SGR_A_APPARENT: FixedStarData = {
+  raJ2000:        266.4168371,  // 17h 45m 40.0409s
+  decJ2000:       -29.0078106,  // −29° 00′ 28.118″
+  pmRa:            -3.151,      // mas/yr east, i.e. μα*cosδ
+  pmDec:           -5.547,      // mas/yr north
+  parallax:         0,
+  radialVelocity:   0,
+};
+
+export const GALACTIC_CENTER = J2000_GALACTIC_CENTER_DIRECTION;
