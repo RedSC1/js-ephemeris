@@ -379,10 +379,10 @@ export class Ephemeris {
     // 光行时修正: 迭代求解 τ，取目标在 t-τ 时刻的状态
     // ----------------------------------------------------
     const applyCOB = opt.cob === true;
-    const getTargetState = async (jd: number): Promise<StateVec> => {
-      const s = await this.state(tag, jd, { computeVelocity: true });
+    const getTargetState = async (jdTT: number): Promise<StateVec> => {
+      const s = await this.state(tag, EphemerisTime.fromTT(jdTT, { deltaTProvider: this.deltaTProvider }), { computeVelocity: true });
       if (applyCOB) {
-        const cobOffset = await this.getCOBOffset(tag, jd);
+        const cobOffset = await this.getCOBOffset(tag, jdTT);
         if (cobOffset) {
           return [
             s[0] - cobOffset[0], s[1] - cobOffset[1], s[2] - cobOffset[2],
