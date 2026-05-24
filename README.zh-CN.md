@@ -1,6 +1,10 @@
 # js-ephemeris
 
+> [!IMPORTANT]
+> **项目公告**：`js-ephemeris` 项目目前已暂停维护。我们正在使用 C++ 重写并重构全新的高精度星历计算内核 —— **[taiyin-ephemeris (太阴)](https://github.com/RedSC1/taiyin-ephemeris)**（基于 C++11，无虚函数开销，完美解析一阶/二阶导数，极简高性能架构）。待 C++ 内核稳定后，本项目将以 C++ 代码为标准模板，从头重构一个纯正、零开销的 JS/TS 版本（或直接编译为 WebAssembly 运行）。敬请期待！
+
 高精度太阳系星历计算引擎，纯 JavaScript/TypeScript 实现。零依赖，浏览器和 Node.js 通用。
+
 
 内置 1800–2100 CE 的高精度数据（基于 NASA JPL DE441 行星星历和 sb441/Horizons 小行星星历拟合，与原始星历还原误差 ~0.001"）。超出此范围时自动降级至 Moshier PLAN404 半解析理论（±5000 年，精度 0.05–2"，不发散）。可通过[扩展数据包](https://github.com/RedSC1/ephemeris-data)将高精度覆盖范围扩充至 -13000 ~ +17000 CE。形心修正（COB）数据未内置，需额外下载。
 

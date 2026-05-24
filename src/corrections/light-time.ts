@@ -13,10 +13,12 @@ const SHAPIRO_CONST_DAYS = 9.8509e-6 / 86400;
 export interface LightTimeResult {
   /** 光行时修正后的地心位置 (J2000/ICRF) */
   pos: Vec3;
-  /** 光行时修正后的地心速度 (J2000/ICRF)，即目标在 t-τ 时刻的速度减去地球在 t 时刻的速度 */
+  /** 光行时修正后的地心速度 (J2000/ICRF)，包含 τ(t) 的解析导数 */
   vel: Vec3;
   /** 光行时 τ (天) */
   tau: number;
+  /** dτ/dt */
+  tauDot: number;
   /** 地心距离 (AU) */
   distance: number;
 }
@@ -44,6 +46,7 @@ export async function applyLightTime(
   let iterations = 0;
   let geoPos: Vec3 = [0, 0, 0];
   let geoVel: Vec3 = [0, 0, 0];
+  let targetVel: Vec3 = [0, 0, 0];
   let distance = 0;
 
   while (true) {
@@ -56,11 +59,7 @@ export async function applyLightTime(
       targetState[1] - earthPos[1],
       targetState[2] - earthPos[2]
     ];
-    geoVel = [
-      targetState[3] - earthVel[0],
-      targetState[4] - earthVel[1],
-      targetState[5] - earthVel[2]
-    ];
+    targetVel = [targetState[3], targetState[4], targetState[5]];
 
     const newDist = Math.sqrt(geoPos[0] * geoPos[0] + geoPos[1] * geoPos[1] + geoPos[2] * geoPos[2]);
 
@@ -83,11 +82,26 @@ export async function applyLightTime(
 
     if (Math.abs(newTauTotal - tau) < 1e-12 || iterations > 3) {
       distance = newDist;
+      tau = newTauTotal;
       break;
     }
     tau = newTauTotal;
     iterations++;
   }
 
-  return { pos: geoPos, vel: geoVel, tau, distance };
+  let tauDot = 0;
+  if (enabled && distance > 0) {
+    const u: Vec3 = [geoPos[0] / distance, geoPos[1] / distance, geoPos[2] / distance];
+    const uDotTargetVel = u[0] * targetVel[0] + u[1] * targetVel[1] + u[2] * targetVel[2];
+    const uDotEarthVel = u[0] * earthVel[0] + u[1] * earthVel[1] + u[2] * earthVel[2];
+    tauDot = LIGHT_TIME_DAYS_PER_AU * (uDotTargetVel - uDotEarthVel) / (1 + LIGHT_TIME_DAYS_PER_AU * uDotTargetVel);
+  }
+
+  geoVel = [
+    targetVel[0] * (1 - tauDot) - earthVel[0],
+    targetVel[1] * (1 - tauDot) - earthVel[1],
+    targetVel[2] * (1 - tauDot) - earthVel[2]
+  ];
+
+  return { pos: geoPos, vel: geoVel, tau, tauDot, distance };
 }

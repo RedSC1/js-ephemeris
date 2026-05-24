@@ -6,79 +6,111 @@ import { LIGHT_TIME_DAYS_PER_AU } from './light-time.js';
  */
 const C_AU_DAY = 1.0 / LIGHT_TIME_DAYS_PER_AU;
 
+function dot(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
 /**
  * 相对论光行差修正 (完整 Lorentz 变换)
- * 
+ *
  * 将星表方向 (astrometric) 修正为视方向 (apparent)。
  * 使用完整的狭义相对论公式，精度优于 0.001"。
- * 
+ *
  * 公式 (IERS Conventions 2010, eq. 7.40):
  *   u' = (u/γ + β + (u·β/(1+1/γ)) * β) / (1 + u·β)
- * 
+ *
  * 其中 β = V_earth/c, γ = 1/√(1-β²)
- * 
+ *
  * 一阶近似 (|β|≈10⁻⁴): u' ≈ u + β - (u·β)u
  * 相对论修正项 (二阶): ~(v/c)² ≈ 0.001"
- * 
+ *
  * @param pos 地心位置向量 (AU)
  * @param earthVel 地球日心速度 (AU/day)
  * @param distance 地心距离 (AU)
  * @returns 光行差修正后的位置向量
  */
 export function applyAberration(pos: Vec3, earthVel: Vec3, distance: number): Vec3 {
-  // 单位方向向量
-  const invD = 1 / distance;
-  const u0 = pos[0] * invD, u1 = pos[1] * invD, u2 = pos[2] * invD;
+  return applyAberrationWithVelocity(pos, [0, 0, 0], earthVel, [0, 0, 0], distance).pos;
+}
 
-  // β = V_earth / c
-  const invC = 1 / C_AU_DAY;
-  const b0 = earthVel[0] * invC, b1 = earthVel[1] * invC, b2 = earthVel[2] * invC;
-
-  // β² 和 γ
-  const beta2 = b0 * b0 + b1 * b1 + b2 * b2;
-  const gamma = 1 / Math.sqrt(1 - beta2);
-  const invGamma = 1 / gamma;
-
-  // u · β
-  const uDotBeta = u0 * b0 + u1 * b1 + u2 * b2;
-
-  // 相对论光行差公式:
-  // u' = (u/γ + β + (u·β / (1 + 1/γ)) * β) / (1 + u·β)
-  const f = uDotBeta / (1 + invGamma);  // 二阶修正因子
-  const denom = 1 / (1 + uDotBeta);
-
-  const up0 = (u0 * invGamma + b0 + f * b0) * denom;
-  const up1 = (u1 * invGamma + b1 + f * b1) * denom;
-  const up2 = (u2 * invGamma + b2 + f * b2) * denom;
-
-  // 归一化并恢复距离
-  const len = Math.sqrt(up0 * up0 + up1 * up1 + up2 * up2);
-  const scale = distance / len;
-  return [up0 * scale, up1 * scale, up2 * scale];
+export interface AberrationVelocityResult {
+  pos: Vec3;
+  vel: Vec3;
 }
 
 /**
- * 光行差对速度的修正
- * 
- * 光行差改变了方向，因此角速度也会受影响。
- * 这里用解析方法：对修正后的位置求导。
- * 
- * 设 u = pos/|pos|, β = V_earth/c
- * 视方向 u' = (u + β) / |u + β|
- * 视位置 P' = u' * distance
- * 
- * 对于速度，我们需要考虑：
- * 1. 原始速度 vel 对 u 的贡献
- * 2. 地球加速度对 β 的贡献 (二阶小量，忽略)
- * 
- * 简化处理：将修正后的位置和原始速度一起做坐标变换，
- * 速度的主要贡献来自目标本身的运动，光行差对速度的修正是二阶小量。
- * 
- * @param vel 地心速度向量 (AU/day)
- * @param pos 光行差修正前的地心位置 (AU)
- * @param earthVel 地球日心速度 (AU/day)
- * @param distance 地心距离 (AU)
- * @returns 光行差修正后的速度向量 (一阶近似)
+ * 相对论光行差修正及其时间导数。
+ */
+export function applyAberrationWithVelocity(
+  pos: Vec3,
+  vel: Vec3,
+  earthVel: Vec3,
+  earthAcc: Vec3,
+  distance: number,
+): AberrationVelocityResult {
+  const invD = 1 / distance;
+  const u: Vec3 = [pos[0] * invD, pos[1] * invD, pos[2] * invD];
+  const distDot = dot(u, vel);
+  const uDot: Vec3 = [
+    (vel[0] - u[0] * distDot) * invD,
+    (vel[1] - u[1] * distDot) * invD,
+    (vel[2] - u[2] * distDot) * invD,
+  ];
+
+  const invC = 1 / C_AU_DAY;
+  const beta: Vec3 = [earthVel[0] * invC, earthVel[1] * invC, earthVel[2] * invC];
+  const betaDot: Vec3 = [earthAcc[0] * invC, earthAcc[1] * invC, earthAcc[2] * invC];
+
+  const beta2 = dot(beta, beta);
+  const invGamma = Math.sqrt(1 - beta2);
+  const invGammaDot = -dot(beta, betaDot) / invGamma;
+  const uDotBeta = dot(u, beta);
+  const uDotBetaDot = dot(uDot, beta) + dot(u, betaDot);
+  const q = 1 + invGamma;
+  const f = uDotBeta / q;
+  const fDot = (uDotBetaDot * q - uDotBeta * invGammaDot) / (q * q);
+
+  const denom = 1 + uDotBeta;
+  const denomDot = uDotBetaDot;
+  const n: Vec3 = [
+    u[0] * invGamma + beta[0] + f * beta[0],
+    u[1] * invGamma + beta[1] + f * beta[1],
+    u[2] * invGamma + beta[2] + f * beta[2],
+  ];
+  const nDot: Vec3 = [
+    uDot[0] * invGamma + u[0] * invGammaDot + betaDot[0] + fDot * beta[0] + f * betaDot[0],
+    uDot[1] * invGamma + u[1] * invGammaDot + betaDot[1] + fDot * beta[1] + f * betaDot[1],
+    uDot[2] * invGamma + u[2] * invGammaDot + betaDot[2] + fDot * beta[2] + f * betaDot[2],
+  ];
+
+  const w: Vec3 = [n[0] / denom, n[1] / denom, n[2] / denom];
+  const wDot: Vec3 = [
+    (nDot[0] * denom - n[0] * denomDot) / (denom * denom),
+    (nDot[1] * denom - n[1] * denomDot) / (denom * denom),
+    (nDot[2] * denom - n[2] * denomDot) / (denom * denom),
+  ];
+
+  const len = Math.sqrt(dot(w, w));
+  const up: Vec3 = [w[0] / len, w[1] / len, w[2] / len];
+  const upDotWDot = dot(up, wDot);
+  const upDot: Vec3 = [
+    (wDot[0] - up[0] * upDotWDot) / len,
+    (wDot[1] - up[1] * upDotWDot) / len,
+    (wDot[2] - up[2] * upDotWDot) / len,
+  ];
+
+  return {
+    pos: [up[0] * distance, up[1] * distance, up[2] * distance],
+    vel: [
+      up[0] * distDot + upDot[0] * distance,
+      up[1] * distDot + upDot[1] * distance,
+      up[2] * distDot + upDot[2] * distance,
+    ],
+  };
+}
+
+/**
+ * @deprecated Use applyAberrationWithVelocity.
  */
 export function applyAberrationToVelocity(
   vel: Vec3,
@@ -86,19 +118,5 @@ export function applyAberrationToVelocity(
   earthVel: Vec3,
   distance: number
 ): Vec3 {
-  // 对于速度，光行差的影响是二阶小量 (v/c * dv/dt / c)
-  // 主要的速度修正已经通过光行时处理了 (取 t-τ 时刻的目标速度)
-  // 这里我们对速度应用同样的方向旋转，保持一致性
-  
-  const u: Vec3 = [pos[0] / distance, pos[1] / distance, pos[2] / distance];
-  const beta: Vec3 = [earthVel[0] / C_AU_DAY, earthVel[1] / C_AU_DAY, earthVel[2] / C_AU_DAY];
-  
-  // |u + β|
-  const apparent: Vec3 = [u[0] + beta[0], u[1] + beta[1], u[2] + beta[2]];
-  const len = Math.sqrt(apparent[0] * apparent[0] + apparent[1] * apparent[1] + apparent[2] * apparent[2]);
-  
-  // 速度中的径向分量不受光行差影响，横向分量按同比例缩放
-  // 简化：直接返回原始速度 (光行差对速度的修正 < 0.001 deg/day)
-  // 如果需要更高精度，可以用数值微分
-  return vel;
+  return applyAberrationWithVelocity(pos, vel, earthVel, [0, 0, 0], distance).vel;
 }

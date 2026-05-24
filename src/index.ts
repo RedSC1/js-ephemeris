@@ -2,6 +2,8 @@
  * js-ephemeris public API
  */
 export { Ephemeris } from './engine.js';
+export { SkyObserver } from './observer.js';
+export type { ObservationOptions, ObservationResult, ObservationVelocityResult } from './observer.js';
 export * from './stars/fixed-star.js';
 export type { PositionResolver, ResolverResult } from './manifest/types.js';
 export type { BodyTag, Vec3, StateVec } from './types.js';

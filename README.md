@@ -1,6 +1,10 @@
 # js-ephemeris
 
+> [!IMPORTANT]
+> **Project Notice**: `js-ephemeris` is currently on hold. We are completely rewriting and refining the core astronomical numerical engine in C++ under the name **[taiyin-ephemeris](https://github.com/RedSC1/taiyin-ephemeris)** (utilizing C++11, zero virtual dispatch, analytical derivatives, and highly optimized CPU memory bounds). Once the C++ kernel stabilizes, this JS/TS version will be entirely rebuilt from the ground up using the C++ codebase as its canonical template (or compiled directly to WebAssembly). Stay tuned!
+
 High-precision solar system ephemeris engine for JavaScript/TypeScript. Zero dependencies, runs in Browser and Node.js.
+
 
 Ships with built-in high-precision data for 1800–2100 CE (fitted from NASA JPL DE441 planetary ephemeris and sb441/Horizons asteroid ephemerides, reconstruction error ~0.001" vs original). Beyond this range, automatically falls back to Moshier PLAN404 semi-analytical theory (±5000 years, 0.05–2" accuracy, non-divergent). High-precision coverage can be extended to -13000 ~ +17000 CE via the [ephemeris-data](https://github.com/RedSC1/ephemeris-data) package. Center-of-body (COB) correction data is not built-in and requires a separate download.
 

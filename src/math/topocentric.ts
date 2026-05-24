@@ -35,11 +35,11 @@ export function getObserverGeocentricVector(obs: Observer, jdUT: number): Vec3 {
 
   const a = EARTH_RADIUS_KM;
   const f = EARTH_FLATTENING;
-  
+
   const sinLat = Math.sin(latRad);
   const cosLat = Math.cos(latRad);
   const oneMinusF = 1.0 - f;
-  
+
   // 椭球体几何系数
   const c = 1.0 / Math.sqrt(cosLat * cosLat + oneMinusF * oneMinusF * sinLat * sinLat);
   const s = oneMinusF * oneMinusF * c;
@@ -50,7 +50,7 @@ export function getObserverGeocentricVector(obs: Observer, jdUT: number): Vec3 {
 
   // 计算当前的地球自转角
   const era = earthRotationAngle(jdUT);
-  
+
   // 观测者所在的本地恒星时角度 (Local Apparent Sidereal Time 简化等效)
   const theta = era + lonRad;
 
@@ -60,4 +60,10 @@ export function getObserverGeocentricVector(obs: Observer, jdUT: number): Vec3 {
   const z = (rhoSinPhiPrime) / AU_KM;
 
   return [x, y, z];
+}
+
+export function getObserverGeocentricVelocity(obs: Observer, jdUT: number): Vec3 {
+  const pos = getObserverGeocentricVector(obs, jdUT);
+  const omega = 2 * Math.PI * 1.00273781191135448;
+  return [-omega * pos[1], omega * pos[0], 0];
 }

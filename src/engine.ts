@@ -11,8 +11,8 @@ import { nutationMatrix, projectIcrfToFrame } from './coordinates/index.js';
 import { Vondrak2011Provider } from './corrections/precession/v11-algorithm.js';
 import { IAU2000BProvider } from './corrections/nutation/iau2000b-algorithm.js';
 import { applyLightTime } from './corrections/light-time.js';
-import { applyAberration } from './corrections/aberration.js';
-import { applyDeflection } from './corrections/deflection.js';
+import { applyAberrationWithVelocity } from './corrections/aberration.js';
+import { applyDeflectionWithVelocity } from './corrections/deflection.js';
 
 /**
  * 天体测量学修正选项 (用于 geocentricState)
@@ -26,6 +26,22 @@ export interface AstrometricOptions {
   deflection?: boolean;
   /** 是否应用形心修正 (COB)，将系统质心转为行星本体位置。需要配置 COB 数据源。 */
   cob?: boolean;
+}
+
+function addVec(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function dotVec(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function normVec(a: Vec3): number {
+  return Math.sqrt(dotVec(a, a));
+}
+
+function radialSpeed(pos: Vec3, vel: Vec3): number {
+  return dotVec(pos, vel) / normVec(pos);
 }
 
 export interface EphemerisOptions {
@@ -55,6 +71,7 @@ export interface EphemerisOptions {
  * js-ephemeris 主引擎（调度器）
  */
 export class Ephemeris {
+  private static readonly DERIVATIVE_STEP_DAYS = 1e-3;
   private resolvers: PositionResolver[] = [];
   /** Delta-T 提供者 (TT − UT, 秒) */
   readonly deltaTProvider: DeltaTProvider;
@@ -351,6 +368,54 @@ export class Ephemeris {
     return this.precessionProvider.getMatrix(jdTT);
   }
 
+  private trueEclipticMatrix(jdTT: number): number[][] {
+    const pMat = this.precessionProvider.getMatrix(jdTT);
+    const nut = this.nutationProvider.getNutation(jdTT);
+
+    const cobm = Math.cos(nut.mobl), sobm = Math.sin(nut.mobl);
+    const cobt = Math.cos(nut.tobl), sobt = Math.sin(nut.tobl);
+    const cpsi = Math.cos(nut.dpsi), spsi = Math.sin(nut.dpsi);
+    const nMat = [
+      [cpsi,        -spsi * cobm,                     -spsi * sobm],
+      [spsi * cobt,  cpsi * cobm * cobt + sobm * sobt, cpsi * sobm * cobt - cobm * sobt],
+      [spsi * sobt,  cpsi * cobm * sobt - sobm * cobt, cpsi * sobm * sobt + cobm * cobt]
+    ];
+    return matMul(rotX(-nut.tobl), matMul(nMat, pMat));
+  }
+
+  private trueEclipticMatrixDerivative(jdTT: number, h = Ephemeris.DERIVATIVE_STEP_DAYS): number[][] {
+    const plus = this.trueEclipticMatrix(jdTT + h);
+    const minus = this.trueEclipticMatrix(jdTT - h);
+    const scale = 1 / (2 * h);
+    return [
+      [
+        (plus[0]![0]! - minus[0]![0]!) * scale,
+        (plus[0]![1]! - minus[0]![1]!) * scale,
+        (plus[0]![2]! - minus[0]![2]!) * scale,
+      ],
+      [
+        (plus[1]![0]! - minus[1]![0]!) * scale,
+        (plus[1]![1]! - minus[1]![1]!) * scale,
+        (plus[1]![2]! - minus[1]![2]!) * scale,
+      ],
+      [
+        (plus[2]![0]! - minus[2]![0]!) * scale,
+        (plus[2]![1]! - minus[2]![1]!) * scale,
+        (plus[2]![2]! - minus[2]![2]!) * scale,
+      ],
+    ];
+  }
+
+  private async stateAcceleration(tag: BodyTag, jdTT: number, h = Ephemeris.DERIVATIVE_STEP_DAYS): Promise<Vec3> {
+    const before = await this.state(tag, EphemerisTime.fromTT(jdTT - h, { deltaTProvider: this.deltaTProvider }), { computeVelocity: true });
+    const after = await this.state(tag, EphemerisTime.fromTT(jdTT + h, { deltaTProvider: this.deltaTProvider }), { computeVelocity: true });
+    return [
+      (after[3] - before[3]) / (2 * h),
+      (after[4] - before[4]) / (2 * h),
+      (after[5] - before[5]) / (2 * h),
+    ];
+  }
+
   /**
    * 获取天体的地心真黄道状态 (位置 + 速度)
    * 返回黄经、黄纬、距离及其变化率。
@@ -405,50 +470,41 @@ export class Ephemeris {
     // 引力偏折修正: 太阳引力导致光线弯曲 (最大 ~1.75")
     // ----------------------------------------------------
     if (opt.deflection && tag !== 'sun') {
-      // 目标日心位置 = 地心位置 + 地球日心位置
-      const targetHelio: Vec3 = [
-        geoPos[0] + earthPos[0],
-        geoPos[1] + earthPos[1],
-        geoPos[2] + earthPos[2]
-      ];
-      geoPos = applyDeflection(geoPos, earthPos, targetHelio, distance);
+      const targetHelio = addVec(geoPos, earthPos);
+      const targetHelioVel = addVec(geoVel, earthVel);
+      const deflected = applyDeflectionWithVelocity(
+        geoPos,
+        geoVel,
+        earthPos,
+        earthVel,
+        targetHelio,
+        targetHelioVel,
+        distance,
+        radialSpeed(geoPos, geoVel),
+      );
+      geoPos = deflected.pos;
+      geoVel = deflected.vel;
+      distance = normVec(geoPos);
     }
 
     // ----------------------------------------------------
-    // 光行差修正: 经典一阶 P' = P + V_earth/c
-    // 对所有太阳系天体适用 (IAU standard: planetary aberration = light-time + stellar aberration)
+    // 光行差修正: Lorentz 方向变换，并同步传播速度
     // ----------------------------------------------------
     if (opt.aberration) {
-      geoPos = applyAberration(geoPos, earthVel, distance);
-      // 光行差对速度的影响是二阶小量，主要修正已通过光行时体现
-      // (取 t-τ 时刻的目标速度而非 t 时刻)
+      const earthAcc = await this.stateAcceleration('ear', time.jdTT);
+      const aberrated = applyAberrationWithVelocity(geoPos, geoVel, earthVel, earthAcc, distance);
+      geoPos = aberrated.pos;
+      geoVel = aberrated.vel;
+      distance = normVec(geoPos);
     }
 
     // ----------------------------------------------------
-    // 岁差+章动矩阵 (J2000 → True Equator of Date)
+    // 岁差+章动矩阵 (J2000 → True Ecliptic of Date)，速度包含 M'(t)·r
     // ----------------------------------------------------
-    const pMat = this.precessionProvider.getMatrix(time.jdTT);
-    const nut = this.nutationProvider.getNutation(time.jdTT);
-    
-    const cobm = Math.cos(nut.mobl), sobm = Math.sin(nut.mobl);
-    const cobt = Math.cos(nut.tobl), sobt = Math.sin(nut.tobl);
-    const cpsi = Math.cos(nut.dpsi), spsi = Math.sin(nut.dpsi);
-    const nMat = [
-      [cpsi,        -spsi * cobm,                     -spsi * sobm],
-      [spsi * cobt,  cpsi * cobm * cobt + sobm * sobt, cpsi * sobm * cobt - cobm * sobt],
-      [spsi * sobt,  cpsi * cobm * sobt - sobm * cobt, cpsi * sobm * sobt + cobm * cobt]
-    ];
-    const npMat = matMul(nMat, pMat);
-    
-    // True Equator → True Ecliptic (绕 x 轴转 -tobl)
-    const rEcl = rotX(-nut.tobl);
-    
-    // 完整变换矩阵: J2000 → True Ecliptic of Date
-    const fullMat = matMul(rEcl, npMat);
-    
-    // 变换位置和速度 (线性变换，矩阵对速度同样适用)
+    const fullMat = this.trueEclipticMatrix(time.jdTT);
+    const fullMatDot = this.trueEclipticMatrixDerivative(time.jdTT);
     const eclPos = mulMatVec(fullMat, geoPos);
-    const eclVel = mulMatVec(fullMat, geoVel);
+    const eclVel = addVec(mulMatVec(fullMat, geoVel), mulMatVec(fullMatDot, geoPos));
     
     // 直角坐标 → 球坐标 + 速度
     const [x, y, z] = eclPos;

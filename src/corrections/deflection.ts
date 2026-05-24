@@ -16,14 +16,55 @@ const SUN_RADIUS_KM = 696000;
  */
 const AU_KM = 149597870.7;
 
+function dot(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function cross(a: Vec3, b: Vec3): Vec3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+function add(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function scale(a: Vec3, s: number): Vec3 {
+  return [a[0] * s, a[1] * s, a[2] * s];
+}
+
+function norm(a: Vec3): number {
+  return Math.sqrt(dot(a, a));
+}
+
+function unitWithDerivative(pos: Vec3, vel: Vec3): { unit: Vec3; len: number; lenDot: number; unitDot: Vec3 } {
+  const len = norm(pos);
+  const unit = scale(pos, 1 / len);
+  const lenDot = dot(unit, vel);
+  const unitDot: Vec3 = [
+    (vel[0] - unit[0] * lenDot) / len,
+    (vel[1] - unit[1] * lenDot) / len,
+    (vel[2] - unit[2] * lenDot) / len,
+  ];
+  return { unit, len, lenDot, unitDot };
+}
+
+export interface DeflectionVelocityResult {
+  pos: Vec3;
+  vel: Vec3;
+}
+
 /**
  * 太阳引力偏折修正 (Gravitational Deflection)
- * 
+ *
  * 基于 SOFA iauLd 函数实现 (Klioner 2003, Expr. 70)。
- * 
+ *
  * 当目标在太阳圆盘内部时，使用 enclosed mass fraction 模型平滑衰减，
  * 保证黄经曲线处处光滑。
- * 
+ *
  * @param objPos 目标地心位置向量 (J2000/ICRF, AU)
  * @param earthPos 地球日心位置向量 (J2000/ICRF, AU)
  * @param targetHelio 目标日心位置向量 (J2000/ICRF, AU)，用于确定太阳到目标的方向
@@ -36,79 +77,98 @@ export function applyDeflection(
   targetHelio: Vec3,
   distance: number
 ): Vec3 {
-  // SOFA iauLd 参数对应关系:
-  // p = objPos / distance (observer to source, unit vector)
-  // e = earthPos / |earthPos| (Sun to observer, unit vector) — 注意: earthPos 就是从太阳到地球
-  // q = targetHelio / |targetHelio| (Sun to source, unit vector)
-  // em = |earthPos| (Sun to observer distance, AU)
+  return applyDeflectionWithVelocity(
+    objPos,
+    [0, 0, 0],
+    earthPos,
+    [0, 0, 0],
+    targetHelio,
+    [0, 0, 0],
+    distance,
+    0,
+  ).pos;
+}
 
-  const em = Math.sqrt(earthPos[0] * earthPos[0] + earthPos[1] * earthPos[1] + earthPos[2] * earthPos[2]);
-  const e: Vec3 = [earthPos[0] / em, earthPos[1] / em, earthPos[2] / em];
+/**
+ * 太阳引力偏折修正及其时间导数。
+ */
+export function applyDeflectionWithVelocity(
+  objPos: Vec3,
+  objVel: Vec3,
+  earthPos: Vec3,
+  earthVel: Vec3,
+  targetHelio: Vec3,
+  targetHelioVel: Vec3,
+  distance: number,
+  distSpeed: number,
+): DeflectionVelocityResult {
+  const earth = unitWithDerivative(earthPos, earthVel);
+  const e = earth.unit;
+  const eDot = earth.unitDot;
+  const em = earth.len;
+  const emDot = earth.lenDot;
 
-  const p: Vec3 = [objPos[0] / distance, objPos[1] / distance, objPos[2] / distance];
+  const pState = unitWithDerivative(objPos, objVel);
+  const p = pState.unit;
+  const pDot = pState.unitDot;
 
-  const targetDist = Math.sqrt(
-    targetHelio[0] * targetHelio[0] + targetHelio[1] * targetHelio[1] + targetHelio[2] * targetHelio[2]
-  );
-  const q: Vec3 = [targetHelio[0] / targetDist, targetHelio[1] / targetDist, targetHelio[2] / targetDist];
+  const qState = unitWithDerivative(targetHelio, targetHelioVel);
+  const q = qState.unit;
+  const qDot = qState.unitDot;
 
-  // qdqpe = q · (q + e) = 1 + q·e
-  // 当星体在太阳后面: q·e ≈ -1, qdqpe ≈ 0 (偏折最大)
-  // 当星体在太阳前面: q·e ≈ +1, qdqpe ≈ 2 (偏折最小)
-  const qDotE = q[0] * e[0] + q[1] * e[1] + q[2] * e[2];
-  let qdqpe = 1.0 + qDotE;
+  const qDotE = dot(q, e);
+  const qDotEDot = dot(qDot, e) + dot(q, eDot);
+  const rawQdqpe = 1.0 + qDotE;
+  const rawQdqpeDot = qDotEDot;
 
-  // 太阳视半径 sin 值（用于圆盘内衰减）
   const sunRadiusSin = SUN_RADIUS_KM / (em * AU_KM);
-  // deflection limiter: dlim = phi²/2 where phi = solar angular radius
+  const sunRadiusSinDot = -sunRadiusSin * emDot / em;
   const dlim = sunRadiusSin * sunRadiusSin / 2.0;
+  const dlimDot = sunRadiusSin * sunRadiusSinDot;
 
-  // Enclosed mass fraction: 太阳圆盘内平滑衰减
   let emf = 1.0;
-  if (qdqpe < dlim * 2) {
-    // 目标非常接近太阳方向，计算 impact factor
-    const pDotE = p[0] * e[0] + p[1] * e[1] + p[2] * e[2];
-    // 从观测者看，目标和太阳的角距的 sin 值
-    const impactFactor = Math.sqrt(Math.max(0, 1.0 - pDotE * pDotE));
+  let emfDot = 0.0;
+  if (rawQdqpe < dlim * 2) {
+    const pDotE = dot(p, e);
+    const pDotEDot = dot(pDot, e) + dot(p, eDot);
+    const impactSquared = Math.max(0, 1.0 - pDotE * pDotE);
+    const impactFactor = Math.sqrt(impactSquared);
+    let impactFactorDot = 0;
+    if (impactFactor > 0) {
+      impactFactorDot = -pDotE * pDotEDot / impactFactor;
+    }
     if (impactFactor < sunRadiusSin) {
       const x = impactFactor / sunRadiusSin;
+      const xDot = (impactFactorDot * sunRadiusSin - impactFactor * sunRadiusSinDot) / (sunRadiusSin * sunRadiusSin);
       emf = (x * 1.05) / (x + 0.05);
+      emfDot = (1.05 * 0.05 * xDot) / ((x + 0.05) * (x + 0.05));
     }
   }
 
-  // 应用 limiter (SOFA 的 dlim 机制) 和 enclosed mass fraction
-  qdqpe = Math.max(qdqpe, dlim) ;
+  const qdqpe = Math.max(rawQdqpe, dlim);
+  const qdqpeDot = rawQdqpe >= dlim ? rawQdqpeDot : dlimDot;
+  const a = SRS_AU / (em * qdqpe);
+  const aDot = a * (-emDot / em - qdqpeDot / qdqpe);
+  const w = a * emf;
+  const wDot = aDot * emf + a * emfDot;
 
-  // w = 2GM / (em * c² * qdqpe) = SRS / (em * qdqpe)
-  // 乘以 bm=1 (太阳质量) 和 emf
-  const w = (SRS_AU / em / qdqpe) * emf;
+  const eXq = cross(e, q);
+  const eXqDot = add(cross(eDot, q), cross(e, qDot));
+  const pXeXq = cross(p, eXq);
+  const pXeXqDot = add(cross(pDot, eXq), cross(p, eXqDot));
 
-  // 偏折方向: p × (e × q)
-  // e × q
-  const eXq: Vec3 = [
-    e[1] * q[2] - e[2] * q[1],
-    e[2] * q[0] - e[0] * q[2],
-    e[0] * q[1] - e[1] * q[0]
-  ];
-  // p × (e × q)
-  const pXeXq: Vec3 = [
-    p[1] * eXq[2] - p[2] * eXq[1],
-    p[2] * eXq[0] - p[0] * eXq[2],
-    p[0] * eXq[1] - p[1] * eXq[0]
-  ];
+  const p1 = add(p, scale(pXeXq, w));
+  const p1Dot = add(pDot, add(scale(pXeXq, wDot), scale(pXeXqDot, w)));
+  const p1State = unitWithDerivative(p1, p1Dot);
+  const p1Unit = p1State.unit;
+  const p1UnitDot = p1State.unitDot;
 
-  // p1 = p + w * p×(e×q)
-  const p1: Vec3 = [
-    p[0] + w * pXeXq[0],
-    p[1] + w * pXeXq[1],
-    p[2] + w * pXeXq[2]
-  ];
-
-  // 归一化后恢复距离
-  const p1Len = Math.sqrt(p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2]);
-  return [
-    (p1[0] / p1Len) * distance,
-    (p1[1] / p1Len) * distance,
-    (p1[2] / p1Len) * distance
-  ];
+  return {
+    pos: scale(p1Unit, distance),
+    vel: [
+      p1Unit[0] * distSpeed + p1UnitDot[0] * distance,
+      p1Unit[1] * distSpeed + p1UnitDot[1] * distance,
+      p1Unit[2] * distSpeed + p1UnitDot[2] * distance,
+    ],
+  };
 }
