@@ -1,0 +1,13 @@
+TSF1
+version=1
+star_count=1
+star.0.id=test-star
+star.0.name=Test star
+star.0.ra_deg=158.79249699787576
+star.0.dec_deg=12.75481385923688
+star.0.reference_epoch=2000
+star.0.pm_ra_mas_yr=0
+star.0.pm_dec_mas_yr=0
+star.0.parallax_mas=1000
+star.0.radial_velocity_km_s=2
+star.0.magnitude=1

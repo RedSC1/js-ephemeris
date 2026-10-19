@@ -1,0 +1,299 @@
+{
+  "provenance": "Dart native backend scenario, C++ ABI 11; read-only captured fixture",
+  "requiresOpm2": true,
+  "rows": [
+    {
+      "label": "bazi/chart",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9
+      ]
+    },
+    {
+      "label": "bazi/qiyun",
+      "flags": 0,
+      "values": [
+        -1, 0, 5, 7.2570251002761905, 2.4190083667587303, 2, 5, 0, 20, 13,
+        56.239663540254696, 2452704, 0.5033877717244124, 2453596,
+        0.6034249051434699
+      ]
+    },
+    {
+      "label": "bazi/clock/0",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9, 14, 15, 0
+      ]
+    },
+    {
+      "label": "bazi/clock/1",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9, 14, 9, 19.352140852
+      ]
+    },
+    {
+      "label": "bazi/clock/2",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9, 13, 59, 39.374341596
+      ]
+    },
+    {
+      "label": "bazi/kongwang",
+      "flags": 0,
+      "values": [7, 6]
+    },
+    {
+      "label": "bazi/tengod",
+      "flags": 0,
+      "values": [2]
+    },
+    {
+      "label": "bazi/hidden",
+      "flags": 0,
+      "values": [3, 6, 8, 4]
+    },
+    {
+      "label": "bazi/stemrelation",
+      "flags": 0,
+      "values": [3]
+    },
+    {
+      "label": "bazi/branchrelation",
+      "flags": 0,
+      "values": [3]
+    },
+    {
+      "label": "bazi/triplerelation",
+      "flags": 0,
+      "values": [0]
+    },
+    {
+      "label": "bazi/lifestage",
+      "flags": 0,
+      "values": [1]
+    },
+    {
+      "label": "bazi/flows",
+      "flags": 0,
+      "values": [38, 19, 25, 151, 25]
+    },
+    {
+      "label": "bazi/xiaoyun",
+      "flags": 0,
+      "values": [1, 8]
+    },
+    {
+      "label": "bazi/xiaoyun",
+      "flags": 0,
+      "values": [2, 25]
+    },
+    {
+      "label": "bazi/xiaoyun",
+      "flags": 0,
+      "values": [3, 42]
+    },
+    {
+      "label": "bazi/xiaoyun",
+      "flags": 0,
+      "values": [4, 59]
+    },
+    {
+      "label": "bazi/xiaoyun",
+      "flags": 0,
+      "values": [5, 64]
+    },
+    {
+      "label": "bazi/dayun",
+      "flags": 0,
+      "values": [
+        1, 2, 3, 12, 2453596, 0.6034249051434692, 2457248, 0.6034249051435836
+      ]
+    },
+    {
+      "label": "bazi/dayun",
+      "flags": 0,
+      "values": [
+        2, 145, 13, 22, 2457248, 0.6034249051435836, 2460901, 0.6034249051435836
+      ]
+    },
+    {
+      "label": "bazi/dayun",
+      "flags": 0,
+      "values": [
+        3, 128, 23, 32, 2460901, 0.6034249051435836, 2464553, 0.6034249051426741
+      ]
+    },
+    {
+      "label": "bazi/dayun",
+      "flags": 0,
+      "values": [
+        4, 123, 33, 42, 2464553, 0.6034249051426741, 2468206, 0.6034249051426741
+      ]
+    },
+    {
+      "label": "bazi/dayun",
+      "flags": 0,
+      "values": [
+        5, 106, 43, 52, 2468206, 0.6034249051426741, 2471858, 0.6034249051444931
+      ]
+    },
+    {
+      "label": "bazi/segments",
+      "flags": 0,
+      "values": [0, 0, 0, 0, 7]
+    },
+    {
+      "label": "bazi/segments",
+      "flags": 0,
+      "values": [1, 0, 1, 7, 30]
+    },
+    {
+      "label": "bazi/siling",
+      "flags": 0,
+      "values": [
+        0, 0, 3, 1, 0, 1, 5, 7.2570251002761905, 7, 30, 2452704,
+        0.5033877717244124
+      ]
+    },
+    {
+      "label": "bazi/siling",
+      "flags": 0,
+      "values": [0, 1, 3, 1, 0, 1, 5, 7, 7, 30, 2452704, 0.5033877717244124]
+    },
+    {
+      "label": "bazi/segments",
+      "flags": 0,
+      "values": [0, 0, 0, 0, 10]
+    },
+    {
+      "label": "bazi/segments",
+      "flags": 0,
+      "values": [1, 0, 1, 10, 30]
+    },
+    {
+      "label": "bazi/siling",
+      "flags": 0,
+      "values": [
+        1, 0, 3, 0, 0, 0, 5, 7.2570251002761905, 0, 10, 2452704,
+        0.5033877717244124
+      ]
+    },
+    {
+      "label": "bazi/siling",
+      "flags": 0,
+      "values": [1, 1, 3, 0, 0, 0, 5, 7, 0, 10, 2452704, 0.5033877717244124]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [0, 2]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [2, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [2, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [10, 1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [3, 3]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [4, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [6, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [5, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [3, 2]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [14, -1]
+    },
+    {
+      "label": "bazi/relations",
+      "flags": 0,
+      "values": [15, -1]
+    },
+    {
+      "label": "bazi/shensha",
+      "flags": 0,
+      "values": [8, 11, 14, 28, 36]
+    },
+    {
+      "label": "bazi/shensha",
+      "flags": 0,
+      "values": [8, 11, 14, 28, 36]
+    },
+    {
+      "label": "bazi/shensha",
+      "flags": 0,
+      "values": [8, 11, 14, 28, 36]
+    },
+    {
+      "label": "bazi/instant",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9
+      ]
+    },
+    {
+      "label": "bazi/solar",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9
+      ]
+    },
+    {
+      "label": "bazi/lunar",
+      "flags": 0,
+      "values": [
+        151, 19, 25, 151, 87, 155, 38, 100, 3, 1, 1, 3, 5, 3, 1, 1, 255, 255, 7,
+        255, 255, 5, 3, 1, 8, 0, 0, 8, 4, 2, 0, 0, 255, 255, 6, 255, 255, 4, 2,
+        0, 11, 3, 9, 11, 9, 25, 10, 9
+      ]
+    },
+    {
+      "label": "bazi/callback-errors",
+      "flags": 0,
+      "values": [1, 1, 1]
+    }
+  ]
+}
