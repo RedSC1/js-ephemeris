@@ -216,7 +216,10 @@ export class PositionApi {
               ),
           ),
         ),
-        new ResultFlags(reply.values[0]!),
+        targets.reduce(
+          (flags, _, i) => flags.union(new ResultFlags(reply.values[i * 32]!)),
+          ResultFlags.none,
+        ),
       );
     });
   }

@@ -606,10 +606,11 @@ cpp = cpp.replace(
   "int taiyin_web_astronomy_version(){return 1;}",
   `int taiyin_web_astronomy_version(){return ${protocolId};}`,
 );
-writeFileSync(
-  resolve(core, "experiments/wasm/astronomy_bridge.generated.inc"),
-  cpp,
-);
+if (!process.argv.includes("--js-only"))
+  writeFileSync(
+    resolve(core, "experiments/wasm/astronomy_bridge.generated.inc"),
+    cpp,
+  );
 let records = `// Generated field-wise C ABI records; no native layouts/pointers are public.\nimport type {JulianDate,AstroDateTime} from '../date.js';\n`;
 for (const t of ordered) {
   if (["taiyin_split_julian_date", "taiyin_calendar_datetime"].includes(t))
@@ -708,7 +709,7 @@ function outType(o, s) {
         ? "readonly number[]"
         : "number";
 }
-let facade = `// Generated native calls only. See scripts/generate-astronomy.mjs.\nimport {AstronomyTransport} from './internal/astronomy-transport.js';\nimport type {JulianDate,AstroDateTime,TimeScale} from './date.js';\nimport type {OperationResult,PositionFlags} from './models.js';\nimport type * as R from './internal/astronomy-records.generated.js';\nimport type {ContextHost} from './internal/wasm.js';\n`;
+let facade = `// Generated native calls only. See scripts/generate-astronomy.mjs.\nimport {AstronomyTransport} from './internal/astronomy-transport.js';\nimport {combinePositionFlags} from './internal/records.js';\nimport type {JulianDate,AstroDateTime,TimeScale} from './date.js';\nimport type {OperationResult,PositionFlags} from './models.js';\nimport type * as R from './internal/astronomy-records.generated.js';\nimport type {ContextHost} from './internal/wasm.js';\n`;
 for (const group of [...new Set(specs.map((s) => s.group))]) {
   const cls =
     group === "configuration"
@@ -747,7 +748,7 @@ for (const group of [...new Set(specs.map((s) => s.group))]) {
     const params = s.inputs
       .map(
         (a) =>
-          `${JSON.stringify(a.name)}:${s.pos.includes(a.name) ? label(a) : flags.includes(a) ? `options.flags??(BigInt(positionMask(options.positionFlags))|BigInt(options.options??0))` : a.name in defaults ? `options.${label(a)}??${a.name === "event_kind" && s.group === "visibility" && s.method.includes("Transit") ? 3 : defaults[a.name]}` : `options.${label(a)}`}`,
+          `${JSON.stringify(a.name)}:${s.pos.includes(a.name) ? label(a) : flags.includes(a) ? `combinePositionFlags(options)` : a.name in defaults ? `options.${label(a)}??${a.name === "event_kind" && s.group === "visibility" && s.method.includes("Transit") ? 3 : defaults[a.name]}` : `options.${label(a)}`}`,
       )
       .join(",");
     let ret =
@@ -768,10 +769,6 @@ for (const group of [...new Set(specs.map((s) => s.group))]) {
   }
   facade += "}\n";
 }
-facade = facade.replace(
-  "import type {OperationResult,PositionFlags}",
-  "import {positionMask,type OperationResult,type PositionFlags}",
-);
 writeFileSync(
   new URL("../src/astronomy.generated.ts", import.meta.url),
   facade,

@@ -58,6 +58,7 @@ These are local build artifacts, not promised release sizes. No DE data/star cat
 - Source pinning, compiler-runtime license bundle, package naming and distribution layout.
 
 Nothing has been published, tagged or pushed as part of this initial repository setup.
+
 ## BaZi reverse lookup (unreleased)
 
 `npm run test:bazi-reverse` executes 165 real-Wasm assertions. The identical
@@ -76,3 +77,19 @@ searches on independent contexts and the existing time/error regressions.
 These are binding/forward–reverse consistency tests, not an independent
 astronomical-accuracy oracle or a claim to reconstruct an exact birth time.
 No package/tag/publication was created.
+
+## PR #1 regression coverage
+
+- Generated astronomy and body/star observed entry points reject unsafe numeric,
+  fractional, negative, non-finite and overflowing uint64 masks before native
+  calls. Safe numbers and full-width bigint values retain all bits; explicit
+  `flags` still override `positionFlags`/`options`.
+- Position batches aggregate every row's flags for all five time entry points,
+  including bit 31 and empty batches. A real Wasm test mixes an exact Sun route
+  with a Saturn barycenter approximation in both target orders.
+- Real target, ayanamsha and house callbacks cannot change their active context's
+  configuration/time policy, including generated setters. Read-only conversions,
+  independent-context setters and later ordinary setters remain usable. This
+  shared scenario runs in both Node and the browser example.
+- Runtime source metadata and capabilities reject missing/stale astronomy
+  protocol versions before entering the metadata bridge or decoding records.

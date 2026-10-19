@@ -2,7 +2,7 @@ import { JulianDate, type TdbJulianDate, type TtJulianDate } from "./date.js";
 import { integer, finite, type CartesianState } from "./models.js";
 import { uint64 } from "./internal/records.js";
 import type { RuntimeResourceHost, Wire } from "./internal/wasm.js";
-import { astronomyProtocolId } from "./internal/astronomy-operations.generated.js";
+import { assertAstronomyProtocol } from "./internal/astronomy-transport.js";
 export interface CustomTargetInput {
   readonly targetId: number;
   readonly tdb: TdbJulianDate;
@@ -191,10 +191,7 @@ export function registerCustomModel(
   model: CustomTargetModel | CustomAyanamshaModel | CustomHouseSystemModel,
 ): CustomModelRegistration {
   return host.run(() => {
-    if (
-      host.wire.invoke("_taiyin_web_astronomy_version") !== astronomyProtocolId
-    )
-      throw Error("Wasm astronomy protocol mismatch");
+    assertAstronomyProtocol(host.wire);
     let registry = registries.get(host.wire);
     if (!registry) {
       registry = new Registry(host.wire);

@@ -15,12 +15,49 @@ export function runCustomModelScenarios(eph) {
     throw Error(`Expected ${Type.name}`);
   };
   const ctx = eph.createContext();
+  const other = eph.createContext();
   const tt = E.TtJulianDate.fromDouble(2460310.5);
   const ut = E.Ut1JulianDate.fromDouble(2460310.5);
   ctx.configuration.setObserverLocation({
     longitudeDegrees: 118.582,
     latitudeDegrees: 37.449,
   });
+  const checkContextMutationGuards = () => {
+    for (const set of [
+      () => ctx.configuration.setRouteRule(E.RouteRule.semiAnalytic),
+      () => ctx.configuration.clearObserverLocation(),
+      () => ctx.configuration.setModels({ tdbModel: E.TdbModel.sofaFull }),
+      () => ctx.configuration.setApparentConfig({ flags: 0 }),
+      () => ctx.configuration.reset(),
+      () => ctx.configuration.setTdbModel(E.TdbModel.sofaFull),
+      () => ctx.configuration.setAllowUtcOutOfRangeEstimate(true),
+      () => ctx.configuration.setStandardAtmosphere(),
+      () => ctx.configuration.disableShapiroDelay(),
+      () => ctx.time.setTdbModel(E.TdbModel.sofaFull),
+      () => ctx.time.setAllowUtcOutOfRangeEstimate(true),
+      () => ctx.time.syncModel(E.TdbModel.sofaFull),
+    ])
+      check(
+        /active calculation/.test(String(throws(set))),
+        "context mutation blocked during native callback",
+      );
+    check(
+      ctx.time.configuredTdbModel === E.TdbModel.fastPeriodic,
+      "rejected mutation preserves JS model",
+    );
+    check(
+      ctx.time.ttToTdb(tt).value.scale === "TDB",
+      "read-only nested conversion still works",
+    );
+    // The guard is context-local, not a global ban on other users/contexts.
+    other.configuration.setStandardAtmosphere();
+    other.time.setTdbModel(E.TdbModel.sofaFull);
+    check(
+      other.time.configuredTdbModel === E.TdbModel.sofaFull,
+      "inactive context can change independently",
+    );
+    other.time.setTdbModel(E.TdbModel.fastPeriodic);
+  };
   try {
     let seen;
     const target = eph.registerCustomTarget({
@@ -95,6 +132,7 @@ export function runCustomModelScenarios(eph) {
     guarded = eph.registerCustomTarget({
       targetId: -900005,
       evaluatePosition: () => {
+        checkContextMutationGuards();
         for (const fn of [
           () => guarded.close(),
           () => ctx.close(),
@@ -121,6 +159,7 @@ export function runCustomModelScenarios(eph) {
     const ay = eph.registerCustomAyanamshaModel({
       modelId: 11001,
       evaluate: (input) => {
+        checkContextMutationGuards();
         check(typeof input.flags === "bigint", "callback flags uint64");
         return 0.123;
       },
@@ -137,11 +176,13 @@ export function runCustomModelScenarios(eph) {
     check(!ctx.astrology.hasAyanamshaModel(11001), "ayanamsha removed");
     const houses = eph.registerCustomHouseSystemModel({
       modelId: 11002,
-      evaluate: (input) =>
-        Array.from(
+      evaluate: (input) => {
+        checkContextMutationGuards();
+        return Array.from(
           { length: 12 },
           (_, i) => (input.ascendantRad + (i * Math.PI) / 6) % (2 * Math.PI),
-        ),
+        );
+      },
     });
     check(
       ctx.astrology.housesAtUt1(ut, { houseSystemId: 11002 }).value
@@ -195,7 +236,18 @@ export function runCustomModelScenarios(eph) {
       "recursive model rejected",
     );
     recursive.close();
+    // Mutations succeed after calculations return, including JS model sync.
+    ctx.configuration.setModels({ tdbModel: E.TdbModel.sofaFull });
+    check(
+      ctx.time.configuredTdbModel === E.TdbModel.sofaFull,
+      "configuration usable after callback",
+    );
+    ctx.time.setTdbModel(E.TdbModel.fastPeriodic);
+    ctx.time.setAllowUtcOutOfRangeEstimate(true);
+    ctx.configuration.setAllowUtcOutOfRangeEstimate(false);
+    ctx.configuration.setStandardAtmosphere();
   } finally {
+    other.close();
     ctx.close();
   }
   return { assertions };

@@ -50,6 +50,7 @@ import {
   type CustomModelRegistration,
 } from "./custom-models.js";
 import { decode, decodeText, width } from "./internal/records.js";
+import { assertAstronomyProtocol } from "./internal/astronomy-transport.js";
 import type { RuntimeRegisteredDataSource } from "./internal/astronomy-records.generated.js";
 import {
   createZiweiDataCatalog,
@@ -145,6 +146,7 @@ export class Ephemeris {
     readonly source: string;
   })[] {
     return this.run(() => {
+      assertAstronomyProtocol(this.wire);
       const v = this.wire.checked(
         this.wire.structured("_taiyin_web_astronomy_extra", [0, 4], []),
       );
@@ -169,6 +171,7 @@ export class Ephemeris {
   }
   get capabilities(): bigint {
     return this.run(() => {
+      assertAstronomyProtocol(this.wire);
       const v = this.wire.checked(
         this.wire.structured("_taiyin_web_astronomy_extra", [0, 5], []),
       );
@@ -485,8 +488,20 @@ export class EphemerisContext {
         this.#diagnostic = diagnostic(v, offset);
       },
     };
+    // Reads/calculations may nest, but a callback must not mutate the context
+    // whose native calculation is still active. Other contexts remain usable.
+    const configurationHost: ContextHost = {
+      ...this.host,
+      run: <T>(fn: () => T) => {
+        if (this.#active)
+          throw new Error(
+            "Context configuration cannot change during an active calculation",
+          );
+        return this.run(fn);
+      },
+    };
     this.position = new PositionApi(this.host);
-    this.time = new Time(this.host);
+    this.time = new Time(this.host, configurationHost);
     this.solarTime = new SolarTime(this.host);
     this.eclipses = new EclipseApi(this.host);
     this.events = new EventsApi(this.host);
@@ -498,7 +513,7 @@ export class EphemerisContext {
     this.astrology = new AstrologyApi(this.host);
     this.stars = new StarsApi(this.host);
     this.observed = new ObservedApi(this.host);
-    this.configuration = new ContextConfiguration(this.host, this.time);
+    this.configuration = new ContextConfiguration(configurationHost, this.time);
   }
   /** @internal Initialization performed by Ephemeris. */
   initialize(options: ContextOptions): void {

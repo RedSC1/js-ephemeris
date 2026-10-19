@@ -18,10 +18,16 @@ import {
   type OperationResult,
   type PositionFlags,
 } from "./models.js";
-import { decode, width, encodeText, uint64 } from "./internal/records.js";
+import {
+  decode,
+  width,
+  encodeText,
+  uint64,
+  combinePositionFlags,
+} from "./internal/records.js";
 import { diagnostic, type ContextHost } from "./internal/wasm.js";
 import type { ObservedPosition } from "./internal/astronomy-records.generated.js";
-import { astronomyProtocolId } from "./internal/astronomy-operations.generated.js";
+import { assertAstronomyProtocol } from "./internal/astronomy-transport.js";
 export interface ObservedOptions {
   positionFlags?: PositionFlags;
   options?: bigint | number;
@@ -32,11 +38,6 @@ export const ObservedOption = Object.freeze({
   refraction: 1n << 33n,
   strictMeteorology: 1n << 34n,
 });
-function observedFlags(o: ObservedOptions): bigint | number {
-  return (
-    o.flags ?? BigInt(positionMask(o.positionFlags)) | BigInt(o.options ?? 0)
-  );
-}
 class VariableAstronomy {
   constructor(readonly host: ContextHost) {}
   calculate<T>(
@@ -46,11 +47,7 @@ class VariableAstronomy {
     flags: number,
   ): OperationResult<readonly T[]> {
     return this.host.run(() => {
-      if (
-        this.host.wire.invoke("_taiyin_web_astronomy_version") !==
-        astronomyProtocolId
-      )
-        throw Error("Wasm astronomy protocol mismatch");
+      assertAstronomyProtocol(this.host.wire);
       if (!count) return result(Object.freeze([]));
       const reply = this.host.wire.structured(
         "_taiyin_web_astronomy_extra",
@@ -207,7 +204,7 @@ export class StarsApi {
       3,
       [
         ...jdValues(jd),
-        ...uint64(observedFlags(options)),
+        ...uint64(combinePositionFlags(options)),
         keys.length,
         ...keys.flatMap((key) => encodeText(key)),
       ],
@@ -249,7 +246,7 @@ export class ObservedApi {
       op,
       [
         ...time,
-        ...uint64(observedFlags(options)),
+        ...uint64(combinePositionFlags(options)),
         bodies.length,
         ...bodies.map((id) => integer(id, -2147483648, 2147483647, "body ID")),
       ],

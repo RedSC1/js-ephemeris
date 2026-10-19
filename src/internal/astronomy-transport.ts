@@ -17,7 +17,14 @@ import {
   ResultFlags,
   type OperationResult,
 } from "../models.js";
-import type { ContextHost } from "./wasm.js";
+import type { ContextHost, Wire } from "./wasm.js";
+
+export function assertAstronomyProtocol(wire: Wire): void {
+  if (wire.invoke("_taiyin_web_astronomy_version") !== astronomyProtocolId)
+    throw Error(
+      "Wasm astronomy protocol mismatch: rebuild the JS and Wasm together",
+    );
+}
 interface Argument {
   name: string;
   type: string;
@@ -80,13 +87,7 @@ export class AstronomyTransport {
     params: Readonly<Record<string, unknown>>,
   ): OperationResult<T> {
     return this.host.run(() => {
-      if (
-        this.host.wire.invoke("_taiyin_web_astronomy_version") !==
-        astronomyProtocolId
-      )
-        throw Error(
-          "Wasm astronomy protocol mismatch: rebuild the JS and Wasm together",
-        );
+      assertAstronomyProtocol(this.host.wire);
       const op =
         operations[integer(id, 0, operations.length - 1, "operation")]!;
       const fallback: TimeScale = op.name.endsWith("_ut") ? "UT1" : "TT";

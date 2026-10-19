@@ -63,13 +63,19 @@ const label = <S extends TimeScale>(jd: JulianDate, scale: S) =>
 /** Scale conversions use the same C++ implementation and strict UTC/EOP policy as Dart. */
 export class Time {
   #model = TdbModel.fastPeriodic;
-  constructor(private readonly host: ContextHost) {}
+  constructor(
+    private readonly host: ContextHost,
+    private readonly configurationHost: ContextHost = host,
+  ) {}
   get configuredTdbModel(): TdbModel {
     return this.host.run(() => this.#model);
   }
   /** @internal Clone synchronization; consumers use setTdbModel. */
   syncModel(model: TdbModel): void {
-    this.#model = model;
+    integer(model, 0, 1, "TDB model");
+    this.configurationHost.run(() => {
+      this.#model = model;
+    });
   }
   private call(op: number, input: readonly number[] = []): number[] {
     return this.host.run(() =>
@@ -127,7 +133,7 @@ export class Time {
   setAllowUtcOutOfRangeEstimate(allow: boolean): void {
     if (typeof allow !== "boolean")
       throw new TypeError("allow must be boolean");
-    this.host.run(() =>
+    this.configurationHost.run(() =>
       this.host.wire.checked(
         this.host.wire.fixed(
           "_taiyin_web_configure",
@@ -139,16 +145,16 @@ export class Time {
   }
   setTdbModel(model: TdbModel): void {
     integer(model, 0, 1, "TDB model");
-    this.host.run(() =>
+    this.configurationHost.run(() => {
       this.host.wire.checked(
         this.host.wire.fixed(
           "_taiyin_web_configure",
           [this.host.handle, 12],
           [model],
         ),
-      ),
-    );
-    this.#model = model;
+      );
+      this.#model = model;
+    });
   }
   private scalar(kind: number, x: number, y = 0): number {
     return finite(

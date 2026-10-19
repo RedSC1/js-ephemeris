@@ -18,21 +18,24 @@ Runtime-owned Shen Sha catalogs/contexts and Ziwei data catalogs live outside as
 
 Shen Sha callback tokens are stored per Wasm instance. Each derived catalog/context retains the corresponding JS predicate references, even after its source closes. Evaluation pins the participating rules and rejects recursive evaluation/closure through them; callback exceptions are transported back and rethrown as the original JS value. Async predicates are invalid. Runtime closure is rejected while a callback/native operation is active. Normal owner shutdown destroys astronomy descendants first, then runtime-owned catalogs and Shen Sha contexts in reverse creation order.
 
-Input flags, result flags and fatal status remain distinct. Uint64 eclipse masks are explicitly split into low/high uint32 values so no packed integer crosses a JavaScript `Number`. Fatal errors are decoded before constructing user-facing data objects. Failed batch calls preserve diagnostics for all targets.
+Input flags, result flags and fatal status remain distinct. Uint64 masks require safe nonnegative integer numbers or in-range bigint values, validated before combining flags; masks are split into low/high uint32 values for transport. Successful position batches return the union of every row's result flags, including unknown unsigned high bits. Fatal errors are decoded before constructing user-facing data objects. Failed batch calls preserve diagnostics for all targets.
+
+Configuration setters, including mutable time-policy setters, reject callback reentry while that context has an active calculation. Read-only nested time conversions remain supported, and inactive contexts can be configured independently. Rejected mutations leave the native configuration and the cached JS TDB model unchanged.
 
 Record schemas are generated from the C++ bridge packers and C headers. Eclipse signatures are generated with the Dart-facing method names. To regenerate after a bridge change:
 
 ```sh
 node scripts/generate-records.mjs /path/to/taiyin-ephemeris
 node scripts/generate-eclipse.mjs /path/to/taiyin-ephemeris
+node scripts/generate-astronomy.mjs /path/to/taiyin-ephemeris --js-only
 npm run format
 npm test
 npm run test:integration
 ```
 
-The generator validates the expected bridge operation count; it is not a general C++ parser. Inspect generated diffs and rerun real Wasm tests when the bridge changes.
+The generator validates the expected bridge operation count; it is not a general C++ parser. Astronomy's `--js-only` refreshes the JS files without writing into the core checkout; omit it only when intentionally regenerating the C++ bridge too. Inspect generated diffs and rerun real Wasm tests when the bridge changes.
 
-The astronomy generator additionally produces a finite 107-operation adapter and concrete public service signatures from C ABI headers. Its generated signature is checked before astronomy calls, rejecting mismatched JS/Wasm artifacts. Variable-size star/observed batches retain per-entry diagnostics and copy all output; uint64 source item counts and capabilities are split into two words and exposed as bigint. Synchronous target/ayanamsha/house callbacks copy input before calling JS and reacquire the heap view afterward; callback exceptions are consumed only after reply allocations have been freed. These registrations are runtime-owned and cannot be changed during evaluation.
+The astronomy generator additionally produces a finite 107-operation adapter and concrete public service signatures from C ABI headers. Its generated signature is checked before astronomy calls and runtime metadata decoding (`registeredDataSources` and `capabilities`), rejecting mismatched JS/Wasm artifacts. Variable-size star/observed batches retain per-entry diagnostics and copy all output; uint64 source item counts and capabilities are split into two words and exposed as bigint. Synchronous target/ayanamsha/house callbacks copy input before calling JS and reacquire the heap view afterward; callback exceptions are consumed only after reply allocations have been freed. These registrations are runtime-owned and cannot be changed during evaluation.
 
 ## Bundlers and Workers
 

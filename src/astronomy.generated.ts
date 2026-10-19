@@ -1,11 +1,8 @@
 // Generated native calls only. See scripts/generate-astronomy.mjs.
 import { AstronomyTransport } from "./internal/astronomy-transport.js";
+import { combinePositionFlags } from "./internal/records.js";
 import type { JulianDate, AstroDateTime, TimeScale } from "./date.js";
-import {
-  positionMask,
-  type OperationResult,
-  type PositionFlags,
-} from "./models.js";
+import type { OperationResult, PositionFlags } from "./models.js";
 import type * as R from "./internal/astronomy-records.generated.js";
 import type { ContextHost } from "./internal/wasm.js";
 export class PhenomenaApi {
@@ -26,10 +23,7 @@ export class PhenomenaApi {
     const r = this.transport.call<R.BodyPhenomena>(0, {
       body_id: bodyId,
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -46,10 +40,7 @@ export class PhenomenaApi {
     const r = this.transport.call<R.BodyPhenomena>(14, {
       body_id: bodyId,
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -74,10 +65,7 @@ export class OrbitalApi {
       body_id: bodyId,
       jd_tt: tt,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -96,10 +84,7 @@ export class OrbitalApi {
       body_id: bodyId,
       jd_tt: tt,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -118,10 +103,7 @@ export class OrbitalApi {
       body_id: bodyId,
       kind: kind,
       jd_start_tt: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -142,10 +124,7 @@ export class OrbitalApi {
       kind: kind,
       jd_start_tt: start,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -164,10 +143,7 @@ export class OrbitalApi {
       body_id: bodyId,
       jd_ut: ut1,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -186,10 +162,7 @@ export class OrbitalApi {
       body_id: bodyId,
       jd_ut: ut1,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -208,10 +181,7 @@ export class OrbitalApi {
       body_id: bodyId,
       kind: kind,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -232,10 +202,7 @@ export class OrbitalApi {
       kind: kind,
       jd_start_ut: start,
       reference_frame_id: options.referenceFrameId ?? 4,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -258,10 +225,7 @@ export class EventsApi {
     const r = this.transport.call<JulianDate<"TT">>(5, {
       target_longitude_rad: targetLongitudeRad,
       estimate_jd_tt: estimate,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -278,10 +242,7 @@ export class EventsApi {
     const r = this.transport.call<JulianDate<"TT">>(6, {
       target_longitude_rad: targetLongitudeRad,
       estimate_jd_tt: estimate,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -305,10 +266,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -341,10 +299,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -371,10 +326,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -411,10 +363,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -437,10 +386,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -464,10 +410,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -490,10 +433,7 @@ export class EventsApi {
       start_jd_tt: start,
       end_jd_tt: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -510,10 +450,7 @@ export class EventsApi {
     const r = this.transport.call<JulianDate<"UT1">>(19, {
       target_longitude_rad: targetLongitudeRad,
       estimate_jd_ut: estimate,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -530,10 +467,7 @@ export class EventsApi {
     const r = this.transport.call<JulianDate<"UT1">>(20, {
       target_longitude_rad: targetLongitudeRad,
       estimate_jd_ut: estimate,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -557,10 +491,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -593,10 +524,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -623,10 +551,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -663,10 +588,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -689,10 +611,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       max_results: options.maxResults ?? 128,
     });
     return r;
@@ -716,10 +635,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -742,10 +658,7 @@ export class EventsApi {
       start_jd_ut: start,
       end_jd_ut: end,
       max_step_days: options.maxStepDays ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -777,10 +690,7 @@ export class EventsApi {
       body_id: bodyId,
       start_jd_ut: start,
       end_jd_ut: end,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -797,10 +707,7 @@ export class EventsApi {
     const r = this.transport.call<R.SolarTransitResult>(46, {
       body_id: bodyId,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -821,10 +728,7 @@ export class EventsApi {
       longitude_deg: options.longitudeDeg,
       latitude_deg: options.latitudeDeg,
       height_m: options.heightM,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -847,10 +751,7 @@ export class EventsApi {
       longitude_deg: options.longitudeDeg,
       latitude_deg: options.latitudeDeg,
       height_m: options.heightM,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -877,10 +778,7 @@ export class VisibilityApi {
       end_jd_ut: end,
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -903,10 +801,7 @@ export class VisibilityApi {
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
       horizon_altitude_rad: options.horizonAltitudeRad,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -942,10 +837,7 @@ export class VisibilityApi {
       end_jd_ut: end,
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -970,10 +862,7 @@ export class VisibilityApi {
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
       horizon_altitude_rad: options.horizonAltitudeRad,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -994,10 +883,7 @@ export class VisibilityApi {
       start_jd_ut: start,
       end_jd_ut: end,
       event_kind: options.eventKind ?? 3,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1018,10 +904,7 @@ export class VisibilityApi {
       end_jd_ut: end,
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1044,10 +927,7 @@ export class VisibilityApi {
       event_kind: options.eventKind ?? 1,
       limb_kind: options.limbKind ?? 1,
       horizon_altitude_rad: options.horizonAltitudeRad,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1081,10 +961,7 @@ export class VisibilityApi {
       start_jd_ut: start,
       end_jd_ut: end,
       event_kind: options.eventKind ?? 1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1107,10 +984,7 @@ export class VisibilityApi {
       end_jd_ut: end,
       event_kind: options.eventKind ?? 1,
       horizon_altitude_rad: options.horizonAltitudeRad,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1164,10 +1038,7 @@ export class VisibilityApi {
       height_m: options.heightM,
       limb_kind: options.limbKind ?? 1,
       horizon_altitude_rad: options.horizonAltitudeRad,
-      visibility_flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      visibility_flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1204,10 +1075,7 @@ export class HeliacalApi {
     const r = this.transport.call<R.HeliacalVisibilityResult>(49, {
       body_id: bodyId,
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       conditions: options.conditions,
     });
     return r;
@@ -1230,10 +1098,7 @@ export class HeliacalApi {
       jd_start_ut: start,
       event_kind: options.eventKind ?? 1,
       max_search_days: options.maxSearchDays,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       conditions: options.conditions,
     });
     return r;
@@ -1252,10 +1117,7 @@ export class HeliacalApi {
     const r = this.transport.call<R.HeliacalVisibilityResult>(57, {
       star_key: starKey,
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       conditions: options.conditions,
     });
     return r;
@@ -1278,10 +1140,7 @@ export class HeliacalApi {
       jd_start_ut: start,
       event_kind: options.eventKind ?? 1,
       max_search_days: options.maxSearchDays,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       conditions: options.conditions,
     });
     return r;
@@ -1305,10 +1164,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationResult>(51, {
       body_id: bodyId,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1327,10 +1183,7 @@ export class OccultationsApi {
       body_id: bodyId,
       target_radius_km: options.targetRadiusKm,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1347,10 +1200,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationResult>(53, {
       body_id: bodyId,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1369,10 +1219,7 @@ export class OccultationsApi {
       body_id: bodyId,
       target_radius_km: options.targetRadiusKm,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1389,10 +1236,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationLocalVisibility>(55, {
       body_id: bodyId,
       occultation: occultation,
-      visibility_flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      visibility_flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1409,10 +1253,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationWhereResult>(56, {
       body_id: bodyId,
       occultation: occultation,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1429,10 +1270,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationResult>(59, {
       star_key: starKey,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1449,10 +1287,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationResult>(60, {
       star_key: starKey,
       jd_start_ut: start,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1469,10 +1304,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationLocalVisibility>(61, {
       star_key: starKey,
       occultation: occultation,
-      visibility_flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      visibility_flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1489,10 +1321,7 @@ export class OccultationsApi {
     const r = this.transport.call<R.LunarOccultationWhereResult>(62, {
       star_key: starKey,
       occultation: occultation,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1511,10 +1340,7 @@ export class OccultationsApi {
       body_id: bodyId,
       target_radius_km: options.targetRadiusKm,
       occultation: occultation,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1537,10 +1363,7 @@ export class AstrologyApi {
     const r = this.transport.call<number>(64, {
       ayanamsha_id: options.ayanamshaId ?? 1,
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1560,10 +1383,7 @@ export class AstrologyApi {
       ayanamsha_id: options.ayanamshaId ?? 1,
       body_id: bodyId,
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       reference_epoch_jd: options.referenceEpoch,
     });
     return r;
@@ -1584,10 +1404,7 @@ export class AstrologyApi {
       ayanamsha_id: options.ayanamshaId ?? 1,
       body_id: bodyId,
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       reference_epoch_jd: options.referenceEpoch,
     });
     return r;
@@ -1616,10 +1433,7 @@ export class AstrologyApi {
     const r = this.transport.call<R.LunarNodePosition>(68, {
       jd_tt: tt,
       kind: options.kind ?? 0,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1636,10 +1450,7 @@ export class AstrologyApi {
     const r = this.transport.call<R.LunarNodePosition>(69, {
       jd_tt: tt,
       kind: options.kind ?? 0,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1654,10 +1465,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(70, {
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1672,10 +1480,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(71, {
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1690,10 +1495,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(72, {
       jd_tt: tt,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1713,10 +1515,7 @@ export class AstrologyApi {
       ayanamsha_id: options.ayanamshaId ?? 1,
       body_id: bodyId,
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       reference_epoch_jd: options.referenceEpoch,
     });
     return r;
@@ -1737,10 +1536,7 @@ export class AstrologyApi {
       ayanamsha_id: options.ayanamshaId ?? 1,
       body_id: bodyId,
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
       reference_epoch_jd: options.referenceEpoch,
     });
     return r;
@@ -1769,10 +1565,7 @@ export class AstrologyApi {
     const r = this.transport.call<R.LunarNodePosition>(76, {
       jd_ut: ut1,
       kind: options.kind ?? 0,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1789,10 +1582,7 @@ export class AstrologyApi {
     const r = this.transport.call<R.LunarNodePosition>(77, {
       jd_ut: ut1,
       kind: options.kind ?? 0,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1807,10 +1597,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(78, {
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1825,10 +1612,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(79, {
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1843,10 +1627,7 @@ export class AstrologyApi {
   ): OperationResult<R.LunarApsisPosition> {
     const r = this.transport.call<R.LunarApsisPosition>(80, {
       jd_ut: ut1,
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return r;
   }
@@ -1922,10 +1703,7 @@ export class AdditionalContextConfiguration {
     } = {},
   ): void {
     const r = this.transport.call<void>(88, {
-      flags:
-        options.flags ??
-        BigInt(positionMask(options.positionFlags)) |
-          BigInt(options.options ?? 0),
+      flags: combinePositionFlags(options),
     });
     return;
   }

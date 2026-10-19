@@ -9,7 +9,13 @@ import {
   readDate,
   type TimeScale,
 } from "../date.js";
-import { finite, integer, text } from "../models.js";
+import {
+  finite,
+  integer,
+  text,
+  positionMask,
+  type PositionFlags,
+} from "../models.js";
 import type { Time } from "../time.js";
 type SchemaField = {
   readonly key: string;
@@ -203,12 +209,27 @@ export function decodeText(
     next: offset + 1 + size,
   };
 }
-export function uint64(value: bigint | number): number[] {
+function uint64Mask(value: bigint | number): bigint {
   const mask =
     typeof value === "bigint"
       ? value
       : BigInt(integer(value, 0, Number.MAX_SAFE_INTEGER, "64-bit mask"));
   if (mask < 0n || mask > 0xffffffffffffffffn)
     throw new RangeError("Mask must fit uint64");
+  return mask;
+}
+/** Validate number masks before BigInt conversion can hide unsafe rounding. */
+export function combinePositionFlags(options: {
+  flags?: bigint | number;
+  options?: bigint | number;
+  positionFlags?: PositionFlags;
+}): bigint {
+  return options.flags != null
+    ? uint64Mask(options.flags)
+    : BigInt(positionMask(options.positionFlags)) |
+        uint64Mask(options.options ?? 0);
+}
+export function uint64(value: bigint | number): number[] {
+  const mask = uint64Mask(value);
   return [Number(mask & 0xffffffffn), Number(mask >> 32n)];
 }

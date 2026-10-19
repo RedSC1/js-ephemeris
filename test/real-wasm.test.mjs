@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Ephemeris } from "../dist/index.js";
 import { AstroDateTime } from "../dist/index.js";
+import { Body, PositionFlag, ResultFlag, TtJulianDate } from "../dist/index.js";
 import { runScenarios, exerciseEclipses } from "./scenarios.mjs";
 import { runExtendedScenarios } from "./extended-scenarios.mjs";
 const reference = JSON.parse(
@@ -20,6 +21,35 @@ reference.rows.push(
     ),
   ),
 );
+test("real mixed-route position batches retain approximation flags from later targets", async () => {
+  const eph = await Ephemeris.initialize({ loadBuiltinEop: false });
+  const ctx = eph.createContext();
+  try {
+    const tt = TtJulianDate.fromDouble(2460310.5);
+    const options = { flags: [PositionFlag.allowBarycenterApproximation] };
+    const exact = ctx.position.atTt(Body.sun, tt, options);
+    const approximate = ctx.position.atTt(Body.saturn, tt, options);
+    assert.equal(
+      exact.flags.contains(ResultFlag.barycenterApproximation),
+      false,
+    );
+    assert.equal(
+      approximate.flags.contains(ResultFlag.barycenterApproximation),
+      true,
+    );
+    for (const targets of [
+      [Body.sun, Body.saturn],
+      [Body.saturn, Body.sun],
+      [Body.sun, Body.sun, Body.saturn],
+    ]) {
+      const batch = ctx.position.batchAtTt(targets, tt, options);
+      assert.equal(batch.flags.mask, exact.flags.union(approximate.flags).mask);
+      assert.equal(batch.value.length, targets.length);
+    }
+  } finally {
+    eph.close();
+  }
+});
 test("real Wasm public facade, ownership, time policy and native numerical fixtures", async () => {
   const eph = await Ephemeris.initialize({ loadBuiltinEop: false });
   try {
