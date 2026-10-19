@@ -2,15 +2,21 @@
 
 [中文说明](README.zh-CN.md)
 
-An experimental JavaScript/TypeScript binding to the **same Taiyin C++ Wasm core used by the Dart Web backend**. Browser and Node.js use the same facade. No astronomy algorithms are reimplemented in JavaScript.
+**js-ephemeris** is an astronomical ephemeris library for JavaScript and
+TypeScript, running in browsers and Node.js through the
+[Taiyin C++ core](https://github.com/RedSC1/taiyin-ephemeris) compiled to WebAssembly.
 
-This is the in-development Wasm successor to `js-ephemeris` 0.0.x. The npm name
-is retained, but the new API is not a drop-in replacement for the old pure-JavaScript
-implementation. That implementation remains available in the
-[repository history](https://github.com/RedSC1/js-ephemeris/tree/7093d13cfefa9a4634169ca0e845ab1e3ba9cdbe).
-Version `1.1.0-dev.0` is not published; `private: true` prevents accidental npm
-publication. Existing lite libraries are not changed. This is not yet a complete
-port of every Python/Dart API.
+- Sun, Moon, planetary and fixed-star positions, observed coordinates, and astronomical event searches.
+- Solar and lunar eclipses, time-scale conversions, and local solar time.
+- Chinese lunar calendars, solar terms, four pillars, BaZi and Ziwei calculations.
+- TypeScript declarations, caller-owned contexts, and external ephemeris data loading.
+
+The calculations share the core used by the Python and Dart bindings. Browser
+and Node.js applications use the same API.
+
+**Development preview:** `1.1.0-dev.0` is not published to npm;
+`private: true` prevents accidental publication. The Wasm backend does not yet
+cover every native API; see the [interface inventory](docs/api-inventory.md).
 
 ## Build locally
 
@@ -104,9 +110,9 @@ console.log(value.value.ut1, value.diagnostic, flags.mask);
 
 Calendar structure, the clock offset, and a chart's mean/apparent solar-clock policy are distinct. Fixed offsets are not IANA time zones: resolve DST and ambiguous local times in the application. See [API guide and coverage](docs/api.md).
 
-The existing Wasm bridge now also exposes BaZi relations, Xiao-Yun, Renyuan-Siling and custom Shen Sha catalogs; Ziwei has shared/reloadable TOML catalogs, immutable JSON option modules, UTC/UT1 flow navigation and reverse lookup, and local/instant/solar/lunar entry points. Solar chart clocks do not replace the physical instant used for solar-term boundaries. Use the separate gender enums: BaZi male is `1`, while Ziwei male is `0`.
+BaZi supports relations, Xiao-Yun, Renyuan-Siling and custom Shen Sha catalogs; Ziwei has shared/reloadable TOML catalogs, immutable JSON option modules, UTC/UT1 flow navigation and reverse lookup, and local/instant/solar/lunar entry points. Solar chart clocks do not replace the physical instant used for solar-term boundaries. Use the separate gender enums: BaZi male is `1`, while Ziwei male is `0`.
 
-The second bridge pass also exposes observed alt/az, rise/set/transit, stellar apparent/observed positions, general event searches, orbital elements/phenomena, heliacal visibility, occultations, house/sidereal/lunar-point extensions, source priorities/metadata and custom target/ayanamsha/house callbacks. These all use existing C++ algorithms. See the [astronomy guide](docs/astronomy.md) and [interface inventory](docs/api-inventory.md) for the remaining explicit gaps and native restrictions.
+Astronomy services include observed alt/az, rise/set/transit, stellar apparent/observed positions, general event searches, orbital elements/phenomena, heliacal visibility, occultations, house/sidereal/lunar-point extensions, source priorities/metadata and custom target/ayanamsha/house callbacks. These use the C++ core algorithms. See the [astronomy guide](docs/astronomy.md) and [interface inventory](docs/api-inventory.md) for coverage and native restrictions.
 
 ## Results, errors, and concurrency
 
@@ -132,7 +138,13 @@ Node and a real browser have exercised position/state/batch, strict and estimate
 
 ## License
 
-Original Wasm binding code is MPL-2.0. Previously published 0.0.x releases retain
-their Apache-2.0 license. The shared Taiyin core and its third-party components
-retain their applicable notices. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
-the [core project](https://github.com/RedSC1/taiyin-ephemeris).
+Original Wasm binding code is MPL-2.0. The shared Taiyin core and its third-party
+components retain their applicable notices. See [LICENSE](LICENSE),
+[NOTICE](NOTICE), and the [core project](https://github.com/RedSC1/taiyin-ephemeris).
+
+## Earlier releases
+
+The pure-JavaScript 0.0.x implementation remains in the
+[repository history](https://github.com/RedSC1/js-ephemeris/tree/7093d13cfefa9a4634169ca0e845ab1e3ba9cdbe)
+under its original Apache-2.0 license. Its API differs from the current Wasm
+binding; existing applications need to adapt their calls when upgrading.

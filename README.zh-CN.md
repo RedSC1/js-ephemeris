@@ -2,12 +2,18 @@
 
 [English](README.md)
 
-这是一个独立的 JS/TS 绑定项目，复用 **Dart Web 后端正在使用的同一套 Taiyin C++ Wasm 内核**。浏览器和 Node.js 使用同一层接口，不另写天文算法。
+**js-ephemeris** 是面向 JavaScript 和 TypeScript 的天文历算库，通过 WebAssembly
+在浏览器和 Node.js 中运行 [Taiyin C++ 内核](https://github.com/RedSC1/taiyin-ephemeris)。
 
-这是 `js-ephemeris` 0.0.x 的 Wasm 后继版本，沿用 npm 包名，但新接口不兼容旧的
-纯 JavaScript 实现。旧版保留在[仓库历史](https://github.com/RedSC1/js-ephemeris/tree/7093d13cfefa9a4634169ca0e845ab1e3ba9cdbe)中。
-当前为尚未发布的 `1.1.0-dev.0`，`package.json` 的 `private: true` 会阻止误发 npm。
-**没有修改现有 lite 库，也尚未覆盖 Python/Dart 的所有接口。**
+- 太阳、月亮、行星和恒星位置，观测坐标与天文事件搜索。
+- 日月食、时间尺度转换，以及地方平太阳时和视太阳时。
+- 中国农历、节气、四柱干支，以及八字和紫微斗数计算。
+- TypeScript 类型声明、显式上下文，以及外部星历数据加载。
+
+计算复用 Python、Dart 绑定所使用的同一套内核，浏览器和 Node.js 使用相同的 API。
+
+**开发预览：** 当前 `1.1.0-dev.0` 尚未发布到 npm，`package.json` 的 `private: true`
+会阻止误发布。Wasm 后端还未覆盖全部原生接口，具体范围见[接口清单](docs/api-inventory.md)。
 
 ## 本地构建
 
@@ -99,9 +105,9 @@ console.log(value.value.ut1, value.diagnostic, flags.mask);
 
 固定 UTC 偏移不是 IANA 时区。夏令时和重复/缺失的当地时间需要应用层先处理。完整用法与当前覆盖范围见 [API 说明](docs/api.md)。
 
-这一轮还接上了八字关系、小运、人元司令、自定义神煞目录，以及紫微共享／可重载 TOML 目录、不可变 JSON option 模块、UTC／UT1 流运导航和反查、本地时间／瞬间／公历日／农历日便捷入口。太阳时只改变排盘虚拟时间，不替换节气边界的物理瞬间。请使用独立的性别枚举：八字 `male=1`，紫微 `male=0`，不要混用裸数字。
+八字接口支持关系、小运、人元司令和自定义神煞目录；紫微支持共享／可重载 TOML 目录、不可变 JSON option 模块、UTC／UT1 流运导航和反查，以及本地时间／瞬间／公历日／农历日便捷入口。太阳时只改变排盘虚拟时间，不替换节气边界的物理瞬间。请使用独立的性别枚举：八字 `male=1`，紫微 `male=0`，不要混用裸数字。
 
-第二轮桥接也已接上高度角／方位角、升落／中天、恒星视位置和观测位置、一般事件搜索、轨道／天象、偕日可见性、掩星、宫位制／恒星黄道／月球点、来源管理，以及自定义星体／ayanamsha／宫位制回调，全部复用 C++。具体用法见 [新增天文接口](docs/astronomy.zh-CN.md)，剩余范围见 [盘点清单](docs/api-inventory.md)。
+天文接口支持高度角／方位角、升落／中天、恒星视位置和观测位置、一般事件搜索、轨道／天象、偕日可见性、掩星、宫位制／恒星黄道／月球点、来源管理，以及自定义星体／ayanamsha／宫位制回调，计算复用 C++ 内核。具体用法见[天文接口指南](docs/astronomy.zh-CN.md)，覆盖范围与限制见[接口清单](docs/api-inventory.md)。
 
 ## 与 Python / Dart 的关系
 
@@ -128,5 +134,10 @@ npm run example:browser
 
 ## 许可
 
-原创 Wasm 绑定代码采用 MPL-2.0；此前已发布的 0.0.x 版本保留 Apache-2.0 授权。
-复用内核及其第三方组件保留各自声明。感谢 Taiyin 内核及其所依据的天文理论、算法和开源实现；详见 [NOTICE](NOTICE) 与 [内核仓库](https://github.com/RedSC1/taiyin-ephemeris)。
+原创 Wasm 绑定代码采用 MPL-2.0，复用内核及其第三方组件保留各自声明。
+感谢 Taiyin 内核及其所依据的天文理论、算法和开源实现；详见 [NOTICE](NOTICE) 与 [内核仓库](https://github.com/RedSC1/taiyin-ephemeris)。
+
+## 早期版本
+
+纯 JavaScript 实现的 0.0.x 版本保留在[仓库历史](https://github.com/RedSC1/js-ephemeris/tree/7093d13cfefa9a4634169ca0e845ab1e3ba9cdbe)中，继续采用其原有的 Apache-2.0 授权。
+其 API 与当前 Wasm 绑定不同，已有应用升级时需要调整调用方式。
