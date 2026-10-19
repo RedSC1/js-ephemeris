@@ -14,7 +14,8 @@ acknowledgments and provenance are reproduced in CORE-NOTICE. Copyright,
 permission and disclaimer texts for core third-party software are retained
 in THIRD_PARTY_NOTICES.txt. Please retain these materials when redistributing
 a build. Generated binaries also incorporate the selected Emscripten SDK's
-runtime; retain its applicable notices in binary release packaging.
+runtime; its license/author statements and the musl, libc++, libc++abi and
+compiler-rt notices are included under assets/licenses/ in npm tarballs.
 
 The default development Wasm embeds the project's default Ziwei rule tables
 and built-in runtime resources. External precise ephemeris files and fixed-star

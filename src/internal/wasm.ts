@@ -71,7 +71,7 @@ export async function loadModule(
   options: WasmInitializationOptions,
 ): Promise<WasmModule> {
   const uri = new URL(
-    options.wasmModuleUri ?? "../../assets/taiyin_web.js",
+    options.wasmModuleUri ?? "../../assets/taiyin_web.mjs",
     import.meta.url,
   );
   const node = typeof process !== "undefined" && !!process.versions?.node;
@@ -80,6 +80,11 @@ export async function loadModule(
     let pending = factories.get(uri.href);
     if (!pending) {
       pending = (async () => {
+        if (uri.pathname.endsWith(".mjs")) {
+          if (node && uri.protocol !== "file:")
+            throw new TypeError("Node requires a local Wasm loader URL");
+          return (await import(uri.href)).default as ModuleFactory;
+        }
         if (node) {
           if (uri.protocol !== "file:")
             throw new TypeError("Node requires a local Wasm loader URL");

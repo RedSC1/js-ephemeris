@@ -1,0 +1,11 @@
+{
+  "core": {
+    "repository": "https://github.com/RedSC1/taiyin-ephemeris",
+    "tag": "v1.1.0",
+    "revision": "0c0ac41241624a45e74d2ab9d26da99038c8fa9c",
+    "archiveUrl": "https://github.com/RedSC1/taiyin-ephemeris/archive/refs/tags/v1.1.0.tar.gz",
+    "archiveSha256": "954979c23897682a23b78f2f1751ee72c4665c2d64542ee62530177228cec842"
+  },
+  "emscripten": "6.0.12",
+  "environments": ["web", "worker", "node"]
+}

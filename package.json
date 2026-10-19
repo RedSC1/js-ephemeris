@@ -24,6 +24,9 @@
     "ziwei"
   ],
   "exports": {
+    "./assets/taiyin_web.mjs": "./assets/taiyin_web.mjs",
+    "./assets/taiyin_web.wasm": "./assets/taiyin_web.wasm",
+    "./assets/build-info.json": "./assets/build-info.json",
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -31,7 +34,13 @@
   },
   "files": [
     "dist",
-    "assets",
+    "assets/taiyin_web.mjs",
+    "assets/taiyin_web.wasm",
+    "assets/build-info.json",
+    "assets/package.json",
+    "assets/README.md",
+    "assets/licenses",
+    "docs",
     "README.md",
     "README.zh-CN.md",
     "LICENSE",
@@ -40,10 +49,14 @@
     "THIRD_PARTY_NOTICES.txt"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build-js.mjs",
+    "build:package": "node scripts/build-package.mjs",
+    "pack:local": "node scripts/pack-local.mjs",
+    "prepack": "node scripts/prepack.mjs",
+    "test:package": "node scripts/test-package.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "test:types": "npm run build && tsc -p tsconfig.type-tests.json",
-    "test": "npm run build && node --test test/unit.test.mjs",
+    "test": "npm run build && node --test test/unit.test.mjs test/packaging.test.mjs",
     "test:integration": "npm run build && node --test test/real-wasm.test.mjs",
     "test:astronomy": "npm run build && node --test test/astronomy.test.mjs",
     "test:bazi-reverse": "npm run build && node --test test/bazi-reverse.test.mjs",
@@ -56,6 +69,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
+    "playwright-core": "1.64.1",
     "prettier": "^3.9.10",
     "typescript": "6.0.3"
   }

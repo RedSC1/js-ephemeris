@@ -1,11 +1,15 @@
 # Generated Wasm assets
 
 Run `npm run build:wasm -- /path/to/taiyin-ephemeris` to generate
-`taiyin_web.js` and `taiyin_web.wasm` here. Both are ignored build artifacts.
+`taiyin_web.mjs` and `taiyin_web.wasm` here. Both are ignored build artifacts.
 
-Keep the files together when deploying a browser application. The adjacent
-`package.json` marks the Emscripten loader as CommonJS for Node; it does not
-affect normal classic-script loading in a browser. The binding's public ESM
-entry point is `dist/index.js`, not this generated loader.
+Keep the files together when deploying a browser application. The ESM loader
+is shared by Node, browsers and module Workers. The adjacent `package.json`
+only supports explicitly supplied legacy CommonJS `.js` loaders; it does not
+change the generated `.mjs` module. The public API entry is `dist/index.js`.
+
+`npm run build:package` builds from the hash-verified public core archive,
+checks the compiler/protocol, and generates `build-info.json` and SDK notices
+in `licenses/`. Ordinary `npm pack` rejects missing or altered verified inputs.
 
 No precise ephemeris dataset or fixed-star catalog is bundled in this folder.

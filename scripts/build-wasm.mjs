@@ -26,12 +26,16 @@ run("emcmake", [
   "-B",
   build,
   "-DCMAKE_BUILD_TYPE=Release",
-  "-DTAIYIN_WEB_ENVIRONMENT=web,node",
+  "-DTAIYIN_WEB_ENVIRONMENT=web,worker,node",
+  "-DCMAKE_EXE_LINKER_FLAGS=-sEXPORT_ES6=1",
 ]);
 run("cmake", ["--build", build, "--target", "taiyin_web", "--parallel", "10"]);
 mkdirSync(resolve(root, "assets"), { recursive: true });
-for (const file of ["taiyin_web.js", "taiyin_web.wasm"])
-  copyFileSync(resolve(build, file), resolve(root, "assets", file));
+for (const [source, output] of [
+  ["taiyin_web.js", "taiyin_web.mjs"],
+  ["taiyin_web.wasm", "taiyin_web.wasm"],
+])
+  copyFileSync(resolve(build, source), resolve(root, "assets", output));
 console.log(
   "Wasm assets built. No ephemeris data or native binary was bundled; nothing was published.",
 );

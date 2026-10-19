@@ -2,10 +2,14 @@ node_modules/
 dist/
 build/
 assets/*.js
+assets/*.mjs
 assets/*.wasm
+assets/build-info.json
+assets/licenses/
 coverage/
 .DS_Store
 private/
 .env
 .env.*
 .npmrc
+*.tgz
