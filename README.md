@@ -1,322 +1,138 @@
-# js-ephemeris
+# js-ephemeris — JavaScript / TypeScript
 
-> [!IMPORTANT]
-> **Project Notice**: `js-ephemeris` is currently on hold. We are completely rewriting and refining the core astronomical numerical engine in C++ under the name **[taiyin-ephemeris](https://github.com/RedSC1/taiyin-ephemeris)** (utilizing C++11, zero virtual dispatch, analytical derivatives, and highly optimized CPU memory bounds). Once the C++ kernel stabilizes, this JS/TS version will be entirely rebuilt from the ground up using the C++ codebase as its canonical template (or compiled directly to WebAssembly). Stay tuned!
+[中文说明](README.zh-CN.md)
 
-High-precision solar system ephemeris engine for JavaScript/TypeScript. Zero dependencies, runs in Browser and Node.js.
+An experimental JavaScript/TypeScript binding to the **same Taiyin C++ Wasm core used by the Dart Web backend**. Browser and Node.js use the same facade. No astronomy algorithms are reimplemented in JavaScript.
 
+This is the in-development Wasm successor to `js-ephemeris` 0.0.x. The npm name
+is retained, but the new API is not a drop-in replacement for the old pure-JavaScript
+implementation. That implementation remains available in the
+[repository history](https://github.com/RedSC1/js-ephemeris/tree/7093d13cfefa9a4634169ca0e845ab1e3ba9cdbe).
+Version `1.1.0-dev.0` is not published; `private: true` prevents accidental npm
+publication. Existing lite libraries are not changed. This is not yet a complete
+port of every Python/Dart API.
 
-Ships with built-in high-precision data for 1800–2100 CE (fitted from NASA JPL DE441 planetary ephemeris and sb441/Horizons asteroid ephemerides, reconstruction error ~0.001" vs original). Beyond this range, automatically falls back to Moshier PLAN404 semi-analytical theory (±5000 years, 0.05–2" accuracy, non-divergent). High-precision coverage can be extended to -13000 ~ +17000 CE via the [ephemeris-data](https://github.com/RedSC1/ephemeris-data) package. Center-of-body (COB) correction data is not built-in and requires a separate download.
+## Build locally
 
-## Features
+Install Node.js 22+ and activate an Emscripten SDK. Pass a Taiyin core checkout
+at `v1.1.0`, containing the experimental `experiments/wasm` bridge:
 
-- **20 built-in bodies** (extensible): Sun, Moon, Mercury–Pluto, Ceres, Pallas, Juno, Vesta, Eros, Chiron, Pholus, Nessus, Lilith
-- **Multi-precision resolver chain**:
-  - Built-in OPM2/OPV2 data (DE441): sub-milliarcsecond, 1800–2100 CE
-  - Moshier PLAN404 fallback: 0.05–2" accuracy, ±5000 years, no data files needed
-  - User-extensible: register custom resolvers (SPK, remote APIs, etc.)
-- **1800–2100 CE** zero-config, extendable to -13000 ~ +17000 CE via [ephemeris-data](https://github.com/RedSC1/ephemeris-data)
-- **Full astrometric corrections**: light-time iteration, relativistic aberration (Lorentz), gravitational deflection, center-of-body (COB)
-- **Multiple coordinate frames**: J2000 equatorial, J2000 ecliptic, true ecliptic/equatorial of date
-- **Velocity support**: analytic Chebyshev derivatives, geocentric ecliptic speed (deg/day)
-- **Topocentric observation**: altitude/azimuth with optional atmospheric refraction
-- **Extensible resolver architecture**: plug in your own data sources (SPK, custom providers)
-
-## Install
-
-```bash
-npm install js-ephemeris
+```sh
+npm ci
+npm run build:wasm -- /path/to/taiyin-ephemeris
+npm run build
+node examples/quick-start.mjs
 ```
 
-## Quick Start
+The Wasm build explicitly enables `web,node`. It does not change native APIs. Generated `.wasm`, loader JavaScript, `dist/`, and build directories are ignored. Build both steps after a clean clone; generated binaries are not committed.
 
-```typescript
-import { Ephemeris } from 'js-ephemeris';
+## Quick start
 
-const eph = new Ephemeris();
+```js
+import { Ephemeris, Body, Ut1JulianDate } from "./dist/index.js";
 
-// Geocentric apparent ecliptic state
-const mars = await eph.geocentricState('mars', new Date('2024-03-20'));
-console.log(mars.lon);       // geocentric ecliptic longitude (degrees)
-console.log(mars.lonSpeed);  // longitude speed (deg/day), negative = retrograde
-console.log(mars.retrograde); // boolean
+const eph = await Ephemeris.initialize();
+const ctx = eph.createContext();
+const ut1 = Ut1JulianDate.fromDouble(2460310.5);
 
-// Raw heliocentric J2000 equatorial position (AU)
-const pos = await eph.position('chiron', 2451545.0);
-console.log(pos.xyz);        // [x, y, z] in AU
-
-// Convert coordinate frames
-const ecl = pos.toTrueEcliptic();
-const [lon, lat, r] = ecl.lbr();
-
-// Full state vector (position + velocity)
-const state = await eph.state('mars', 2451545.0);
-// state = [x, y, z, vx, vy, vz] in AU and AU/day
+const { value: mars, flags } = ctx.position.atUt1(Body.marsBarycenter, ut1);
+console.log(mars.coordinates, flags.mask);
+console.log(ctx.eclipses.nextSolarAtUt1(ut1).value);
+console.log(
+  ctx.chineseCalendar.fromSolar({ year: 2024, month: 2, day: 10 }).value,
+);
 ```
 
-## Topocentric Observation
+Initialization is asynchronous; calculations are synchronous. Close `ctx`/`eph` when finished, preferably in `finally`. Closing a runtime closes its child contexts and charts. Returned numeric records own their data and remain usable after closure.
 
-```typescript
-import { Ephemeris, SkyObserver } from 'js-ephemeris';
+The default runtime includes the core's semi-analytic fallback, built-in EOP resources, and default Ziwei rule tables. **DE442/DE441 OPM2 files and star catalogs are not bundled or downloaded automatically.** `Body.marsBarycenter` is the system barycenter; `Body.mars` is the physical planet center and can require satellite/COB data.
 
-const eph = new Ephemeris();
-const observer = new SkyObserver(eph, { lat: 39.9, lon: 116.4, alt: 50 });
+## Browser use and data
 
-const result = await observer.observe('mars', new Date());
-console.log(result.ra);        // right ascension (radians)
-console.log(result.dec);       // declination (radians)
-console.log(result.azimuth);   // azimuth (radians)
-console.log(result.altitude);  // altitude (radians)
-```
+Serve this repository over HTTP and run `npm run example:browser` for the local integration page. In an application, deploy the generated loader and `.wasm` together:
 
-### SkyObserver Options
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `lat` | `number` | required | Geodetic latitude (degrees, north positive) |
-| `lon` | `number` | required | Longitude (degrees, east positive) |
-| `alt` | `number` | `0` | Altitude above sea level (meters) |
-| `pressure` | `number` | — | Atmospheric pressure (hPa). Enables refraction if > 0 |
-| `temperature` | `number` | `15` | Temperature (°C). Used with refraction |
-| `refractionProvider` | `RefractionProvider` | Standard | Custom refraction model |
-
-> Atmospheric refraction is only applied when `pressure` is provided and > 0. Since meteorological conditions vary by location and time, the library cannot provide a sensible default, so refraction is off by default.
-
-## Configuration
-
-### EphemerisOptions
-
-Passed to `new Ephemeris(options)`. All fields are optional — zero-config works out of the box.
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `baseUrl` | `string` | — | CDN base URL for remote data files |
-| `loader` | `DataLoader` | — | Custom data loader (overrides baseUrl) |
-| `remoteManifest` | `RemoteManifest` | — | Describes available remote data files |
-| `cobManifest` | `COBManifest` | — | Center-of-body correction data manifest |
-| `cacheSize` | `number` | `100` | LRU cache entries (0 = unlimited) |
-| `deltaTProvider` | `function` | built-in | Custom ΔT (TT−UT) function |
-| `precessionProvider` | `PrecessionProvider` | Vondrak 2011 | Precession model |
-| `nutationProvider` | `NutationProvider` | IAU 2000B | Nutation model |
-| `astrometric` | `AstrometricOptions` | see below | Default corrections for `geocentricState` |
-| `resolvers` | `PositionResolver[]` | — | Additional resolvers to register |
-
-### AstrometricOptions
-
-Controls corrections applied by `geocentricState()`. Can be set globally (in `EphemerisOptions.astrometric`) or per-call.
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `lightTime` | `boolean` | `true` | Iterative light-time correction |
-| `aberration` | `boolean` | `true` | Relativistic stellar aberration |
-| `deflection` | `boolean` | `false` | Gravitational light deflection by Sun |
-| `cob` | `boolean` | `false` | Center-of-body correction (requires COB data) |
-
-```typescript
-// Zero config — all defaults
-const eph = new Ephemeris();
-
-// Custom config
-const eph = new Ephemeris({
-  baseUrl: 'https://cdn.jsdelivr.net/gh/RedSC1/ephemeris-data@main/data_integrated/',
-  cacheSize: 200,
-  astrometric: { deflection: true }  // enable deflection globally
+```js
+const eph = await Ephemeris.initialize({
+  wasmModuleUri: new URL("/assets/taiyin_web.js", location.href),
 });
-
-// Per-call override
-const geo = await eph.geocentricState('mars', jd, { cob: true });
-```
-
-## Supported Bodies
-
-| Tag | Body | Built-in | Extended (download) | Source |
-|-----|------|----------|---------------------|--------|
-| `sun` | Sun | ∞ | — | Synthetic (−Earth) |
-| `mer` | Mercury | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `ven` | Venus | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `ear` | Earth/EMB | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `moon` | Moon | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `mar` | Mars | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `jup` | Jupiter | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `sat` | Saturn | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `ura` | Uranus | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `nep` | Neptune | 1800–2100 | -13000–17000 CE | DE441 OPM2 |
-| `plu` | Pluto | 1800–2100 | -13000–17000 CE | DE441 OPV2 |
-| `ceres` | Ceres | 1800–2100 | -13000–17000 CE | sb441 / numerical integration |
-| `pallas` | Pallas | 1800–2100 | -13000–17000 CE | sb441 / numerical integration |
-| `juno` | Juno | 1800–2100 | -13000–17000 CE | sb441 / numerical integration |
-| `vesta` | Vesta | 1800–2100 | -13000–17000 CE | sb441 / numerical integration |
-| `eros` | Eros | 1800–2100 | -13000–17000 CE | sb441 / numerical integration |
-| `chiron` | Chiron | 1800–2100 | -13000–17000 CE | Horizons / numerical integration |
-| `pholus` | Pholus | 1800–2100 | -13000–17000 CE | Horizons / numerical integration |
-| `nessus` | Nessus | 1800–2100 | -13000–17000 CE | Horizons / numerical integration |
-| `lilith` | Lilith (1181) | 1800–2100 | -13000–17000 CE | Horizons / numerical integration |
-
-Extended data matches the full DE441 coverage range. Download from [ephemeris-data](https://github.com/RedSC1/ephemeris-data).
-
-### Center-of-Body (COB) Correction Data (requires download)
-
-COB corrects planet system barycenter to planet body center. Not built-in — download from [ephemeris-data](https://github.com/RedSC1/ephemeris-data).
-
-| Body | Coverage | Source |
-|------|----------|--------|
-| Jupiter | 1600–2200 CE | jup365.bsp |
-| Saturn | 1750–2250 CE | sat441.bsp |
-| Uranus | -12000–17000 CE | ura111xl-799.bsp |
-| Neptune | 1600–2400 CE | nep097.bsp |
-| Pluto | 1800–2200 CE | plu060.bsp |
-
-## Extended Data (beyond 1800–2100)
-
-Additional data files covering -13000 CE to +17000 CE are available at [ephemeris-data](https://github.com/RedSC1/ephemeris-data).
-
-Data directory structure (in [ephemeris-data](https://github.com/RedSC1/ephemeris-data)):
-
-```
-data_integrated/
-├── mer/
-│   ├── before_1800/        # Extended past
-│   ├── 1800_2100/          # JPL official data (fitted)
-│   └── after_2100/         # Extended future
-├── ven/
-├── ear/
-├── moon/
-├── mar/
-├── jup/
-├── sat/
-├── ura/
-├── nep/
-├── plu/
-├── ceres/
-├── chiron/
-├── ...                     # Other asteroids
-└── cob/                    # Center-of-body offsets (requires separate download)
-    ├── jupiter/
-    ├── saturn/
-    ├── uranus/
-    ├── neptune/
-    └── pluto/
-```
-
-Each file is named `{body}_{jdStart}_{jdEnd}.bin.gz` (gzipped OPM2/OPV2 Chebyshev data).
-
-```typescript
-import { Ephemeris } from 'js-ephemeris';
-
-// Use jsDelivr as CDN (serves GitHub repo files directly)
-const eph = new Ephemeris({
-  baseUrl: 'https://cdn.jsdelivr.net/gh/RedSC1/ephemeris-data@main/data_integrated/'
-});
-
-// Or use local files (Node.js)
-import { NodeFileLoader } from 'js-ephemeris/loader/node';
-const eph2 = new Ephemeris({
-  loader: new NodeFileLoader('/path/to/ephemeris-data/')
-});
-
-// Now works for dates outside 1800-2100
-const ancient = await eph.geocentricState('mars', julianDay(-500, 6, 15));
-```
-
-Without extended data, the Moshier fallback automatically provides positions for all major planets and Moon with arcsecond-level accuracy over ±5000 years.
-
-## Astrometric Corrections
-
-`geocentricState` applies corrections by default:
-
-| Correction | Default | Effect |
-|-----------|---------|--------|
-| Light-time | ✅ on | Iterative, with Shapiro delay |
-| Stellar aberration | ✅ on | Relativistic Lorentz transform |
-| Gravitational deflection | ❌ off | Solar limb darkening model |
-| Center-of-body (COB) | ❌ off | Barycenter → planet surface center |
-
-> **Note**: COB correction data (for Jupiter, Saturn, Uranus, Neptune, Pluto) is not built-in. Download from [ephemeris-data](https://github.com/RedSC1/ephemeris-data) and configure a loader to use it.
-
-```typescript
-// Geometric position (no corrections)
-const geo = await eph.geocentricState('mars', jd, {
-  lightTime: false,
-  aberration: false
-});
-
-// Full apparent with deflection
-const app = await eph.geocentricState('mars', jd, {
-  deflection: true
+const response = await fetch("/data/sun.opm2");
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+eph.loadEphemerisBytes(new Uint8Array(await response.arrayBuffer()), {
+  filename: "sun.opm2",
 });
 ```
 
-## Architecture
+Load the complete required target/center chain, not just the Sun. Normal core routing chooses among registered sources. The byte loader also supports BSP/SPK, TKC1, and TKE1. EOP, TLL1, TSC1 and TSF1 have dedicated loaders. No public pointer or manual Wasm memory management is required. See [data loading](docs/data-loading.md).
 
-The engine uses a priority-based resolver chain:
+The loader URL is **executable code** and must be trusted. It is not a data URL. Bundlers and Workers can pass an Emscripten `moduleFactory`; see [architecture](docs/architecture.md). Browser deployments need a CSP that permits the loader and WebAssembly compilation.
 
-| Priority | Resolver | Source |
-|----------|----------|--------|
-| 50 | Builtin | Embedded OPM2/OPV2 (1800–2100 CE) |
-| 40 | Remote | CDN/local file loading |
-| 20 | Moshier | PLAN404 semi-analytical (all planets + Moon) |
-| 10 | Keplerian | Mean orbital elements (asteroids) |
+## Time, calendars, and charts
 
-> **Planned**: A NASA/JPL SPK (.bsp) file reader is under development and will be added in a future release.
+`Date` input represents a UTC **instant**; local civil input uses `AstroDateTime` plus the selected calendar's fixed offset. Creating a typed Julian date labels coordinates; it never silently converts time scales.
 
-Higher priority resolvers are tried first. If a resolver cannot handle the request (e.g., date out of range), the next one is used automatically.
+```js
+import {
+  AstroDateTime,
+  ChineseCalendarConfig,
+  BaziGender,
+  ZiweiGender,
+} from "./dist/index.js";
 
-The Moshier fallback provides positions for all planets + Moon without any data files, using Steve Moshier's PLAN404 theory fitted to DE404, with polynomial corrections aligned to DE441. It does not diverge over ±5000 years (unlike VSOP87).
+const ctx = eph.createContext({
+  chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),
+});
+const local = new AstroDateTime(2003, 3, 13, 14, 15);
+console.log(ctx.chineseCalendar.fourPillarsLocal(local).value);
 
-### Custom Resolvers
+const bazi = ctx.bazi();
+console.log(bazi.calculateLocal(local, { gender: BaziGender.male }).value);
 
-Implement the `PositionResolver` interface to plug in your own data source:
-
-```typescript
-import type { PositionResolver, ResolverResult } from 'js-ephemeris';
-
-const myResolver: PositionResolver = {
-  name: 'my-source',
-  priority: 60,  // higher than Builtin(50) = used first
-  canResolve(tag, jd) { return tag === 'mars' && jd > 2451545; },
-  async resolve(tag, jd) {
-    // Return J2000 equatorial cartesian (AU)
-    return { state: [x, y, z], source: 'my-source', precision: 'milliarcsec', center: 'sun', frame: 'ICRF / J2000 Equatorial' };
-  }
-};
-
-eph.registerResolver(myResolver);
+const ziwei = ctx.ziwei();
+const chart = ziwei.createChartLocal(local, { gender: ZiweiGender.male }).value;
+console.log(chart.summary);
 ```
 
-## Fallback (No Data Files Required)
+UTC/EOP conversion is strict by default. `atUt1()` itself does not require EOP. To explicitly permit out-of-range estimates:
 
-Even without any data files loaded, the Moshier PLAN404 engine provides planetary positions:
-
-```typescript
-import { MoshierResolver } from 'js-ephemeris/moshier';
-
-// Standalone usage (no Ephemeris engine needed)
-const resolver = new MoshierResolver();
-const mars = await resolver.resolve('mar', 2451545.0);
-console.log(mars.state); // [x, y, z] heliocentric J2000 equatorial (AU)
+```js
+ctx.time.setAllowUtcOutOfRangeEstimate(true);
+const { value, flags } = ctx.time.scalesFromUtc(
+  new Date("2024-04-08T18:00:00Z"),
+);
+console.log(value.value.ut1, value.diagnostic, flags.mask);
 ```
 
-**Moshier fallback accuracy (vs DE441):**
+Calendar structure, the clock offset, and a chart's mean/apparent solar-clock policy are distinct. Fixed offsets are not IANA time zones: resolve DST and ambiguous local times in the application. See [API guide and coverage](docs/api.md).
 
-| Body | ±500 years | ±1500 years | Notes |
-|------|-----------|-------------|-------|
-| Mercury | 0.5" | 1.8" | |
-| Venus | 0.13" | 0.12" | |
-| Earth | 0.05" | 2.0" | Extended to ±5000yr |
-| Mars | 0.24" | 0.58" | |
-| Jupiter | 0.5" | 0.71" | |
-| Saturn | 0.5" | 0.54" | |
-| Uranus | 0.76" | 1.54" | |
-| Neptune | 0.7" | 0.67" | |
-| Moon | ~0.1" | ~12" | Geocentric |
-| Pluto | ~10" | ~28" | |
+The existing Wasm bridge now also exposes BaZi relations, Xiao-Yun, Renyuan-Siling and custom Shen Sha catalogs; Ziwei has shared/reloadable TOML catalogs, immutable JSON option modules, UTC/UT1 flow navigation and reverse lookup, and local/instant/solar/lunar entry points. Solar chart clocks do not replace the physical instant used for solar-term boundaries. Use the separate gender enums: BaZi male is `1`, while Ziwei male is `0`.
+
+The second bridge pass also exposes observed alt/az, rise/set/transit, stellar apparent/observed positions, general event searches, orbital elements/phenomena, heliacal visibility, occultations, house/sidereal/lunar-point extensions, source priorities/metadata and custom target/ayanamsha/house callbacks. These all use existing C++ algorithms. See the [astronomy guide](docs/astronomy.md) and [interface inventory](docs/api-inventory.md) for the remaining explicit gaps and native restrictions.
+
+## Results, errors, and concurrency
+
+- Computational operations return `{ value, flags }`, following Dart's named result rather than Python's tuple syntax. Configuration/metadata methods can return plain values or `void`.
+- Fatal C++ statuses throw typed `EphemerisError` subclasses with `status`, `statusName`, `resultFlags` and available diagnostics. Missing eclipse contact times are `null`.
+- `ctx.lastDiagnostic` is a convenience for operations exposing an ephemeris diagnostic, not a substitute for the current call's return flags/errors. Time-scale results carry their own diagnostic.
+- High-bit eclipse options use `bigint`, e.g. `EclipseOption.includeContacts`; never use JavaScript's 32-bit `1 << 33`.
+- One Wasm instance is synchronous and single-threaded. `Promise.all()` does not make CPU calculations parallel. Use independent runtimes in Workers for parallel work; do not share live contexts/charts across workers.
+
+## Tests
+
+```sh
+npm test
+npm run test:types
+npm run test:integration
+npm run test:astronomy
+# Optional: compare real OPM2 loading with more native calendar oracle rows.
+TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
+npm run example:browser
+```
+
+Node and a real browser have exercised position/state/batch, strict and estimated time conversions, leap seconds, three calendar modes, BaZi/custom predicates, Ziwei solar clocks/flows/casting/catalog reload, ownership guards, and **all 39 eclipse bridge operations**. See [verification notes](docs/verification.md) for scope and limitations. Native agreement tests verify wrapper consistency, not independent astronomical accuracy.
 
 ## License
 
-Apache-2.0 — see [LICENSE](./LICENSE)
-
-## Roadmap
-
-- [ ] NASA/JPL SPK (.bsp) file reader
-- [ ] Planetary satellites (Galilean moons, Titan, Triton, etc.)
-- [ ] Additional asteroids and TNOs
+Original Wasm binding code is MPL-2.0. Previously published 0.0.x releases retain
+their Apache-2.0 license. The shared Taiyin core and its third-party components
+retain their applicable notices. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
+the [core project](https://github.com/RedSC1/taiyin-ephemeris).

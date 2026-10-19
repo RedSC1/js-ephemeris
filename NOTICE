@@ -1,16 +1,24 @@
-js-ephemeris
-Copyright 2026 RedSC1
+js-ephemeris — JavaScript / TypeScript Wasm bindings
+Copyright 2026 RedSC1.
 
-This product includes software developed at OpenDestiny.
+Original binding source and documentation are licensed under MPL-2.0.
+See LICENSE for the complete text.
 
-Portions of this software are based on:
+This project gratefully reuses the Taiyin Ephemeris C++ core and the same
+Wasm bridge used by its Dart Web binding. The astronomy, calendar, BaZi and
+Ziwei results are calculated by that core, not a second JavaScript port.
 
-1. Moshier PLAN404 Planetary Ephemeris
-   Author: Steve L. Moshier
-   Website: http://www.moshier.net/
-   Source: "Astronomical Algorithms" program (aa-56), December 1996
-   Usage: Semi-analytical planetary theory (gplan algorithm and PLAN404 data tables)
-          in src/moshier/. Provides heliocentric J2000 ecliptic coordinates for
-          Mercury through Pluto, fitted to JPL DE404.
-   
-   The source code was distributed without an explicit license by the author.
+We thank the authors and maintainers of the underlying astronomical theories,
+scientific data, algorithms and open-source implementations. The core's
+acknowledgments and provenance are reproduced in CORE-NOTICE. Copyright,
+permission and disclaimer texts for core third-party software are retained
+in THIRD_PARTY_NOTICES.txt. Please retain these materials when redistributing
+a build. Generated binaries also incorporate the selected Emscripten SDK's
+runtime; retain its applicable notices in binary release packaging.
+
+The default development Wasm embeds the project's default Ziwei rule tables
+and built-in runtime resources. External precise ephemeris files and fixed-star
+catalogs are loaded separately by the application; distribute their respective
+source/provenance notices when bundling them.
+
+Core source: https://github.com/RedSC1/taiyin-ephemeris

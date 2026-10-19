@@ -1,67 +1,62 @@
 {
   "name": "js-ephemeris",
-  "version": "0.0.2",
-  "description": "High-precision solar system ephemeris engine. Zero dependencies, Browser & Node.js.",
+  "version": "1.1.0-dev.0",
+  "private": true,
+  "description": "Experimental JavaScript/TypeScript bindings for the Taiyin C++ Wasm core.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./moshier": {
-      "types": "./dist/moshier/index.d.ts",
-      "import": "./dist/moshier/index.js"
-    },
-    "./loader/node": {
-      "types": "./dist/loader/node.d.ts",
-      "import": "./dist/loader/node.js"
-    },
-    "./coordinates": {
-      "types": "./dist/coordinates/index.d.ts",
-      "import": "./dist/coordinates/index.js"
-    },
-    "./stars/fixed-star": {
-      "types": "./dist/stars/fixed-star.d.ts",
-      "import": "./dist/stars/fixed-star.js"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "README.zh-CN.md",
-    "LICENSE",
-    "NOTICE"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
-  },
+  "license": "MPL-2.0",
+  "author": "RedSC1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RedSC1/js-ephemeris.git"
   },
-  "keywords": [
-    "ephemeris",
-    "astronomy",
-    "planetary",
-    "solar-system",
-    "de441",
-    "moshier",
-    "chebyshev",
-    "celestial-mechanics"
-  ],
-  "author": "RedSC1",
-  "license": "Apache-2.0",
+  "homepage": "https://github.com/RedSC1/js-ephemeris#readme",
   "bugs": {
     "url": "https://github.com/RedSC1/js-ephemeris/issues"
   },
-  "homepage": "https://github.com/RedSC1/js-ephemeris#readme",
+  "keywords": [
+    "ephemeris",
+    "astronomy",
+    "wasm",
+    "typescript",
+    "chinese-calendar",
+    "bazi",
+    "ziwei"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "NOTICE",
+    "CORE-NOTICE",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test:types": "npm run build && tsc -p tsconfig.type-tests.json",
+    "test": "npm run build && node --test test/unit.test.mjs",
+    "test:integration": "npm run build && node --test test/real-wasm.test.mjs",
+    "test:astronomy": "npm run build && node --test test/astronomy.test.mjs",
+    "test:bazi-reverse": "npm run build && node --test test/bazi-reverse.test.mjs",
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "format": "prettier --write src scripts test examples docs README.md README.zh-CN.md package.json tsconfig.json",
+    "example:browser": "node scripts/serve-example.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
-    "@types/node": "^25.7.0",
-    "tsx": "^4.22.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.6"
+    "@types/node": "^25.0.0",
+    "prettier": "^3.9.10",
+    "typescript": "6.0.3"
   }
 }

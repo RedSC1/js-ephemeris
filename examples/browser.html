@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ephemeris Wasm — integration</title>
+    <style>
+      body {
+        max-width: 900px;
+        margin: 48px auto;
+        padding: 0 20px;
+        font: 16px/1.6 system-ui;
+        color: #123;
+        background: #f5f7fb;
+      }
+      pre {
+        white-space: pre-wrap;
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ephemeris JS/TS · shared C++ Wasm</h1>
+    <p>Local development check. No data is uploaded.</p>
+    <pre id="result">Initializing…</pre>
+    <script type="module">
+      import { Ephemeris } from "../dist/index.js";
+      import { runScenarios, exerciseEclipses } from "../test/scenarios.mjs";
+      import { runExtendedScenarios } from "../test/extended-scenarios.mjs";
+      import { runAstronomyScenarios } from "../test/astronomy-scenarios.mjs";
+      import { runCustomModelScenarios } from "../test/custom-model-scenarios.mjs";
+      import { runBaziReverseScenarios } from "../test/bazi-reverse-scenarios.mjs";
+      const output = document.querySelector("#result");
+      let eph;
+      try {
+        eph = await Ephemeris.initialize({ loadBuiltinEop: false });
+        const reference = await fetch(
+          "../test/fixtures/native-reference.json",
+        ).then((r) => {
+          if (!r.ok) throw new Error(`fixture HTTP ${r.status}`);
+          return r.json();
+        });
+        const report = await runScenarios(eph, { reference });
+        report.extended = runExtendedScenarios(eph);
+        const astronomy = runAstronomyScenarios(eph);
+        report.astronomy = {
+          assertions: astronomy.assertions,
+          success: astronomy.success.length,
+          nativeErrors: astronomy.nativeErrors,
+        };
+        report.customModels = runCustomModelScenarios(eph);
+        report.baziReverse = runBaziReverseScenarios(eph);
+        const ctx = eph.createContext();
+        report.eclipseMethods = exerciseEclipses(ctx).length;
+        ctx.close();
+        output.textContent = JSON.stringify(
+          { status: "PASS", ...report },
+          null,
+          2,
+        );
+        document.title = "PASS — Ephemeris Wasm";
+      } catch (error) {
+        output.textContent = error.stack ?? String(error);
+        document.title = "FAIL — Ephemeris Wasm";
+      } finally {
+        eph?.close();
+      }
+    </script>
+  </body>
+</html>
