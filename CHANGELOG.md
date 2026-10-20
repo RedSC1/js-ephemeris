@@ -1,8 +1,6 @@
 # Changelog
 
-## 1.1.0
-
-npm publication pending.
+## 1.1.0 — 2026-10-20
 
 - Split the npm distribution into `js-ephemeris`, `js-bazi` and `js-ziwei`, matching the Dart package boundaries. Optional imports augment the existing context; extensions share one core/Wasm and do not duplicate binaries.
 - Verify core-only, each extension separately, and combined offline installs, including installed TypeScript consumers and lifecycle checks.

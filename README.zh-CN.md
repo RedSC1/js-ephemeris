@@ -16,7 +16,7 @@
 
 ## 安装
 
-以下用法对应 **1.1.0**，npm 发布尚待执行；发布前可先安装 `build/packages/` 中对应的本地安装包。
+三个包的 **1.1.0** 版本均已发布到 npm。
 
 ```sh
 npm install js-ephemeris@1.1.0

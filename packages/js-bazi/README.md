@@ -3,8 +3,8 @@
 [中文说明](README.zh-CN.md)
 
 Optional BaZi / Shen Sha extension for [js-ephemeris](https://github.com/RedSC1/js-ephemeris).
-Requires the matching `js-ephemeris@1.1.0` peer package. The 1.1.0 release is prepared;
-npm publication is pending. Before publication, install the matching local archives.
+Version **1.1.0** is available on npm and requires the matching
+`js-ephemeris@1.1.0` peer package.
 
 ```sh
 npm install js-ephemeris@1.1.0 js-bazi@1.1.0

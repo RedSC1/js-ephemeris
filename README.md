@@ -19,8 +19,7 @@ for the 1.1.0 release scope.
 
 ## Installation
 
-The commands below target **1.1.0**, which is prepared for npm publication.
-Until it appears on npm, install the matching local archives from `build/packages/`.
+Version **1.1.0** is available on npm for all three packages.
 
 ```sh
 npm install js-ephemeris@1.1.0

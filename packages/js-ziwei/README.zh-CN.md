@@ -5,13 +5,13 @@
 紫微斗数扩展，复用 [js-ephemeris](https://github.com/RedSC1/js-ephemeris) 的
 C++／WebAssembly 内核。需要匹配的 `js-ephemeris@1.1.0` 核心包。
 
-1.1.0 已完成发布准备，npm 发布尚待执行。正式发布后的安装命令为：
+**1.1.0** 已发布到 npm：
 
 ```sh
 npm install js-ephemeris@1.1.0 js-ziwei@1.1.0
 ```
 
-发布前可用本地安装包，将路径替换为实际位置：
+如需安装本地构建产物，将路径替换为实际位置：
 
 ```sh
 npm install /path/to/js-ephemeris-1.1.0.tgz /path/to/js-ziwei-1.1.0.tgz
