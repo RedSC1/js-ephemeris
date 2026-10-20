@@ -1,0 +1,147 @@
+name: Package compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      [
+        ".github/workflows/ci.yml",
+        ".gitattributes",
+        "package*.json",
+        "wasm-build.json",
+        "assets/package.json",
+        "LICENSE",
+        "NOTICE",
+        "CORE-NOTICE",
+        "THIRD_PARTY_NOTICES.txt",
+        "src/**",
+        "scripts/**",
+        "test/**",
+        "tsconfig*.json",
+      ]
+  push:
+    branches: [main]
+    paths:
+      [
+        ".github/workflows/ci.yml",
+        ".gitattributes",
+        "package*.json",
+        "wasm-build.json",
+        "assets/package.json",
+        "LICENSE",
+        "NOTICE",
+        "CORE-NOTICE",
+        "THIRD_PARTY_NOTICES.txt",
+        "src/**",
+        "scripts/**",
+        "test/**",
+        "tsconfig*.json",
+      ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build pinned Wasm once
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Install pinned Emscripten SDK
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          sdk_version=$(node -p 'require("./wasm-build.json").emscripten')
+          "$RUNNER_TEMP/emsdk/emsdk" install "$sdk_version"
+          "$RUNNER_TEMP/emsdk/emsdk" activate "$sdk_version"
+      - name: Build verified package inputs
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          npm run pack:local
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-wasm
+          if-no-files-found: error
+          path: |
+            assets/taiyin_web.mjs
+            assets/taiyin_web.wasm
+            assets/build-info.json
+            assets/licenses/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          if-no-files-found: error
+          path: build/packages/*.tgz
+
+  node:
+    name: Node ${{ matrix.node }} / ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+        node: ["22", "24"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-wasm
+          path: assets
+      - run: npm test
+      - run: npm run test:types
+      - run: npm run test:integration
+      - run: npm run test:astronomy
+      - run: npm run test:bazi-reverse
+      - run: npm run test:package -- --browsers none
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-${{ matrix.node }}-${{ matrix.os }}-report
+          path: build/package-test-result.json
+
+  browsers:
+    name: Browser engines and Vite / ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-wasm
+          path: assets
+      - run: npx playwright-core install --with-deps chromium firefox webkit
+      - run: npm run test:package -- --browsers chromium,firefox,webkit --vite
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browsers-${{ matrix.os }}-report
+          path: build/package-test-result.json

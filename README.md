@@ -14,9 +14,23 @@ TypeScript, running in browsers and Node.js through the
 The calculations share the core used by the Python and Dart bindings. Browser
 and Node.js applications use the same API.
 
-**Development preview:** `1.1.0-dev.0` is not published to npm;
-`private: true` prevents accidental publication. The Wasm backend does not yet
-cover every native API; see the [interface inventory](docs/api-inventory.md).
+**1.1.0 release preparation:** this version is not yet published to npm.
+`private: true` remains enabled until publication is explicitly approved.
+See [CHANGELOG](CHANGELOG.md) and the [interface inventory](docs/api-inventory.md)
+for the release scope.
+
+## Installation
+
+After 1.1.0 is published:
+
+```sh
+npm install js-ephemeris@1.1.0
+```
+
+Until then, install the locally built package with
+`npm install /path/to/js-ephemeris-1.1.0.tgz`; the registry's existing 0.0.x
+release has a different API. Consumers do not need a C++ compiler or Emscripten.
+Node.js 22+ and modern ESM/WebAssembly-capable browsers are the intended targets.
 
 ## Build locally
 
@@ -39,7 +53,7 @@ For C++ development, `npm run build:wasm -- /path/to/core` followed by
 ## Quick start
 
 ```js
-import { Ephemeris, Body, Ut1JulianDate } from "./dist/index.js";
+import { Ephemeris, Body, Ut1JulianDate } from "js-ephemeris";
 
 const eph = await Ephemeris.initialize();
 const ctx = eph.createContext();
@@ -86,7 +100,7 @@ import {
   ChineseCalendarConfig,
   BaziGender,
   ZiweiGender,
-} from "./dist/index.js";
+} from "js-ephemeris";
 
 const ctx = eph.createContext({
   chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),
@@ -134,12 +148,19 @@ npm run test:types
 npm run test:integration
 npm run test:astronomy
 npm run test:package
+npm run test:package -- --browsers chromium,firefox,webkit --vite
 # Optional: compare real OPM2 loading with more native calendar oracle rows.
 TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
 npm run example:browser
 ```
 
 Node and a real browser have exercised position/state/batch, strict and estimated time conversions, leap seconds, three calendar modes, BaZi/custom predicates, Ziwei solar clocks/flows/casting/catalog reload, ownership guards, and **all 39 eclipse bridge operations**. See [verification notes](docs/verification.md) for scope and limitations. Native agreement tests verify wrapper consistency, not independent astronomical accuracy.
+
+The compatibility workflow compiles Wasm once, then reuses the verified assets
+for Node 22/24 on Linux/macOS/Windows and browser-engine/Vite tests. It contains
+no publish step. WebKit testing is not the same as testing Apple's installed
+Safari application; results and remaining gaps are recorded in the verification
+notes. See [Vite deployment](docs/packaging.md#vite-applications) for asset setup.
 
 ## License
 

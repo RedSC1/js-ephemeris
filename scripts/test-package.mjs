@@ -8,17 +8,69 @@ import {
   mkdtempSync,
   readFileSync,
   realpathSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join, extname, sep } from "node:path";
-import { chromium } from "playwright-core";
+import { chromium, firefox, webkit } from "playwright-core";
+import {
+  build as viteBuild,
+  createServer as viteServer,
+  preview as vitePreview,
+} from "vite";
 import { root, npm, run, json } from "./package-utils.mjs";
 import { cleanupInstalledTest } from "./package-test-cleanup.mjs";
 import {
   requiredPackageInputs,
   verifyPackageInputs,
 } from "./verify-package.mjs";
+
+const args = process.argv.slice(2);
+const reportPath = resolve(root, "build/package-test-result.json");
+// A failed run must not leave a previous successful report looking current.
+rmSync(reportPath, { force: true });
+let browserNames = ["chromium"];
+let testVite = false;
+for (let index = 0; index < args.length; index++) {
+  if (args[index] === "--vite") testVite = true;
+  else if (args[index] === "--browsers" && args[index + 1]) {
+    const value = args[++index];
+    browserNames = value === "none" ? [] : value.split(",");
+  } else
+    throw new Error(
+      "Usage: npm run test:package -- [--browsers chromium,firefox,webkit|none] [--vite]",
+    );
+}
+const browserTypes = { chromium, firefox, webkit };
+if (
+  browserNames.some((name) => !Object.hasOwn(browserTypes, name)) ||
+  new Set(browserNames).size !== browserNames.length ||
+  (testVite && !browserNames.length)
+)
+  throw new Error(
+    "Choose distinct supported browsers; --vite requires a browser",
+  );
+
+async function checkPage(browser, url, expected, workerCount) {
+  const page = await browser.newPage();
+  try {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+    await page.goto(url);
+    await page.waitForFunction(() => globalThis.packageTestResult, undefined, {
+      timeout: 180000,
+    });
+    const result = await page.evaluate(() => globalThis.packageTestResult);
+    assert.equal(result.status, "PASS", `${url}: ${result.error}`);
+    assert.deepEqual(errors, []);
+    assert.deepEqual(result.browser, expected);
+    assert.equal(result.workers.length, workerCount);
+    result.workers.forEach((worker) => assert.deepEqual(worker, expected));
+  } finally {
+    await page.close();
+  }
+}
 
 verifyPackageInputs();
 const destination = resolve(root, "build/packages");
@@ -169,28 +221,97 @@ try {
     server.once("error", reject);
     server.listen(0, "127.0.0.1", resolve);
   });
-  browser = await chromium.launch(
-    process.env.CHROME_BIN
-      ? { executablePath: process.env.CHROME_BIN }
-      : existsSync(chromium.executablePath())
-        ? {}
-        : { channel: "chrome" },
-  );
-  const page = await browser.newPage();
-  const pageErrors = [];
-  page.on("pageerror", (error) => pageErrors.push(String(error)));
-  await page.goto(
-    `http://127.0.0.1:${server.address().port}/smoke/browser.html`,
-  );
-  await page.waitForFunction(() => globalThis.packageTestResult, undefined, {
-    timeout: 180000,
-  });
-  const web = await page.evaluate(() => globalThis.packageTestResult);
-  assert.equal(web.status, "PASS", web.error);
-  assert.deepEqual(pageErrors, []);
-  assert.deepEqual(web.browser, reports.node);
-  assert.equal(web.workers.length, 3);
-  web.workers.forEach((report) => assert.deepEqual(report, reports.node));
+  let dev, production;
+  const browserReports = [];
+  try {
+    if (testVite) {
+      const viteRoot = resolve(app, "vite");
+      mkdirSync(resolve(viteRoot, "public/ephemeris"), { recursive: true });
+      for (const file of ["index.html", "main.mjs", "worker.mjs"])
+        copyFileSync(
+          resolve(root, "test/package/vite", file),
+          resolve(viteRoot, file),
+        );
+      copyFileSync(
+        resolve(smoke, "scenario.mjs"),
+        resolve(viteRoot, "scenario.mjs"),
+      );
+      for (const file of ["taiyin_web.mjs", "taiyin_web.wasm"])
+        copyFileSync(
+          resolve(installed, "assets", file),
+          resolve(viteRoot, "public/ephemeris", file),
+        );
+      const config = {
+        root: viteRoot,
+        configFile: false,
+        base: "/release-smoke/",
+        build: { target: "es2022" },
+        worker: { format: "es" },
+        server: { host: "127.0.0.1", port: 0 },
+        preview: { host: "127.0.0.1", port: 0 },
+      };
+      dev = await viteServer(config);
+      await dev.listen();
+      await viteBuild(config);
+      production = await vitePreview(config);
+    }
+    for (const name of browserNames) {
+      console.log(
+        `[package-test] ${name}: installed modules${testVite ? ", Vite dev and production" : ""}`,
+      );
+      browser = await browserTypes[name].launch(
+        name !== "chromium"
+          ? {}
+          : process.env.CHROME_BIN
+            ? { executablePath: process.env.CHROME_BIN }
+            : existsSync(chromium.executablePath())
+              ? {}
+              : { channel: "chrome" },
+      );
+      await checkPage(
+        browser,
+        `http://127.0.0.1:${server.address().port}/smoke/browser.html`,
+        reports.node,
+        3,
+      );
+      if (testVite) {
+        for (const http of [dev.httpServer, production.httpServer])
+          await checkPage(
+            browser,
+            `http://127.0.0.1:${http.address().port}/release-smoke/`,
+            reports.node,
+            1,
+          );
+      }
+      browserReports.push({
+        name,
+        version: browser.version(),
+        installedModules: "PASS",
+        moduleWorkers: 2,
+        classicWorkers: 1,
+        ...(testVite
+          ? {
+              viteDev: "PASS",
+              viteProduction: "PASS",
+              viteModuleWorker: "PASS",
+            }
+          : {}),
+      });
+      await browser.close();
+      browser = undefined;
+    }
+  } finally {
+    try {
+      await dev?.close();
+    } finally {
+      if (production)
+        await new Promise((resolve, reject) =>
+          production.httpServer.close((error) =>
+            error ? reject(error) : resolve(),
+          ),
+        );
+    }
+  }
   const report = {
     status: "PASS",
     package: `${packed.name}@${packed.version}`,
@@ -198,19 +319,21 @@ try {
     compressedBytes: packed.size,
     unpackedBytes: packed.unpackedSize,
     nodeVersion: process.version,
-    browserVersion: browser.version(),
+    platform: process.platform,
+    architecture: process.arch,
     node: "PASS",
     nodeWorkers: reports.nodeWorkers,
-    browser: "PASS",
-    browserModuleWorkers: 2,
-    browserClassicWorkers: 1,
+    browsers: browserReports,
+    ...(testVite
+      ? {
+          viteVersion: json(resolve(root, "node_modules/vite/package.json"))
+            .version,
+        }
+      : {}),
     installedTypes: "PASS",
     core: json(resolve(installed, "assets/build-info.json")).pin.core.tag,
   };
-  writeFileSync(
-    resolve(root, "build/package-test-result.json"),
-    JSON.stringify(report, null, 2) + "\n",
-  );
+  writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await cleanupInstalledTest({ browser, server, app });

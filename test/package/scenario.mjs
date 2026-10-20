@@ -1,9 +1,9 @@
 // Shared by clean installed-package consumers, not by source-tree imports.
-export async function exercisePackage(E) {
+export async function exercisePackage(E, initializationOptions = {}) {
   const check = (value, message) => {
     if (!value) throw new Error(message);
   };
-  const eph = await E.Ephemeris.initialize();
+  const eph = await E.Ephemeris.initialize(initializationOptions);
   const ctx = eph.createContext();
   try {
     check(
@@ -63,7 +63,7 @@ export async function exercisePackage(E) {
     );
     output.strictStatus = strictError.status;
     // A fresh runtime in this same consumer does not share mutable EOP state.
-    const independent = await E.Ephemeris.initialize();
+    const independent = await E.Ephemeris.initialize(initializationOptions);
     try {
       check(independent.hasEop, "independent runtime EOP");
     } finally {

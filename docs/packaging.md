@@ -16,6 +16,11 @@ npm ci
 source /path/to/emsdk/emsdk_env.sh
 npm run pack:local
 npm run test:package
+# Full browser-engine and Vite dev/production checks:
+npm exec -- playwright-core install chromium firefox webkit
+npm run test:package -- --browsers chromium,firefox,webkit --vite
+# Node-only CI jobs do not require a browser installation:
+npm run test:package -- --browsers none
 ```
 
 If no browser is installed, `npx playwright-core install chromium` installs the
@@ -72,8 +77,16 @@ Browser and server shutdown are independent cleanup steps: a shutdown failure
 does not skip removal of the temporary project. The test writes
 `build/package-test-result.json`. These are deployment/consistency tests, not
 an independent astronomical-accuracy assessment. Current local coverage is
-macOS ARM64, Node 25 and Chromium; a cross-platform/minimum-Node CI matrix is
-still needed before claiming those environments have been verified.
+recorded in [verification notes](verification.md), including startup blockers.
+The report lists only browsers actually tested; requested unavailable browsers
+fail the command, rather than being silently skipped. Old reports are removed
+before each run. WebKit is Playwright's engine build, not Apple's Safari app.
+
+The compatibility CI builds Wasm once on Linux and downloads that artifact in
+Node 22/24 jobs on Linux/macOS/Windows and browser/Vite jobs on Linux/macOS.
+It runs for code changes in pull requests/main and can be dispatched manually.
+Documentation-only changes do not rebuild Wasm. No job has publish credentials,
+write permissions or an npm publication step.
 
 ## Loading installed assets
 
@@ -90,3 +103,50 @@ relative layout. When a frontend build copies assets elsewhere, deploy
 trusted `.mjs` URL. The loader and Wasm have public package subpath exports;
 `moduleFactory` is also available for build-tool-managed imports. There is no
 implicit CDN or ephemeris download, and no automatic bundler plugin.
+
+## Vite applications
+
+The tested setup keeps the generated loader outside Vite's module graph and
+copies it with its Wasm companion into `public/ephemeris/`. Use the installed
+package, not this repository's `dist/`, for the application import.
+For example, put this in a project-root `copy-ephemeris.mjs` build step:
+
+```js
+import { cpSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const assets = dirname(
+  fileURLToPath(import.meta.resolve("js-ephemeris/assets/taiyin_web.mjs")),
+);
+const output = resolve("public/ephemeris");
+mkdirSync(output, { recursive: true });
+for (const name of ["taiyin_web.mjs", "taiyin_web.wasm", "licenses"])
+  cpSync(resolve(assets, name), resolve(output, name), { recursive: true });
+for (const name of [
+  "LICENSE",
+  "NOTICE",
+  "CORE-NOTICE",
+  "THIRD_PARTY_NOTICES.txt",
+])
+  cpSync(resolve(assets, "..", name), resolve(output, name));
+```
+
+Run it before `vite` or `vite build`, then initialize on the client:
+
+```js
+import { Ephemeris } from "js-ephemeris";
+const eph = await Ephemeris.initialize({
+  wasmModuleUri: new URL(
+    `${import.meta.env.BASE_URL}ephemeris/taiyin_web.mjs`,
+    location.href,
+  ),
+});
+```
+
+Use `build.target: "es2022"` for top-level await and `worker.format: "es"`
+when bundling module Workers. The installation suite tests the same initializer
+in the main page and a module Worker with both Vite's development server and
+its built production preview under `/release-smoke/`, not only the origin root.
+This is client-side deployment coverage; it does not claim SSR integration or
+automatic asset discovery after arbitrary bundling.

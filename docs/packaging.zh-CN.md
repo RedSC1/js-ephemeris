@@ -13,6 +13,11 @@ npm ci
 source /path/to/emsdk/emsdk_env.sh
 npm run pack:local
 npm run test:package
+# 全部浏览器引擎及 Vite 开发／生产构建：
+npm exec -- playwright-core install chromium firefox webkit
+npm run test:package -- --browsers chromium,firefox,webkit --vite
+# 只测 Node，不要求安装浏览器：
+npm run test:package -- --browsers none
 ```
 
 没有测试浏览器时，可以用 `npx playwright-core install chromium` 安装。
@@ -59,8 +64,14 @@ ESM loader、Wasm、公开文档和内核／第三方／Emscripten 运行时声�
 不同环境的数值结果会互相对照。这是安装与绑定一致性验证，不是独立的天文精度评估。
 结果写入 `build/package-test-result.json`；即使浏览器或 HTTP 服务关闭时报错，
 也仍会执行后续关闭步骤与临时项目清理。
-目前本机验证的是 macOS ARM64、Node 25 和 Chromium；最低 Node 版本及跨平台 CI
-还需另外补齐，不能把这些环境都算作已经测试通过。
+已执行的版本和启动阻塞详见[验证记录](verification.md)。报告只列出实际测试的浏览器；
+指定的浏览器启动失败会使命令失败，不会偷偷跳过；每次运行前会删除上次报告。
+这里的 WebKit 是 Playwright 引擎构建，不能冒称已测试苹果发行的 Safari 应用。
+
+兼容性 CI 在 Linux 编译一次 Wasm，之后 Linux／macOS／Windows 的 Node 22／24
+以及 Linux／macOS 的浏览器／Vite job 都复用同一份产物。
+代码 PR、main 代码改动或手动 dispatch 可以触发；纯文档修改不重新编译。
+workflow 只有只读权限，没有发布凭据或 npm 发布步骤。
 
 ## 前端部署
 
@@ -71,3 +82,25 @@ Node 和 Worker 都可使用 `await Ephemeris.initialize()`，不需要暴露 Wa
 一起部署，再用 `wasmModuleUri` 指定可信的 `.mjs` 地址。包提供 loader、Wasm 和构建
 信息的子路径导出；也可通过 `moduleFactory` 接入构建工具管理的 loader。
 目前没有自动 CDN 下载、自动加载精确星历数据或自动配置打包工具的插件。
+
+## Vite 项目
+
+已测试的接入方式是把安装包中的 `taiyin_web.mjs`、`taiyin_web.wasm` 与许可声明
+复制到项目 `public/ephemeris/`，保留 loader 与 Wasm 的文件名及相对位置。
+完整复制脚本见[英文配置示例](packaging.md#vite-applications)，在 `vite`／`vite build` 前执行。
+
+应用代码使用包名导入，并明确传入部署地址：
+
+```js
+import { Ephemeris } from "js-ephemeris";
+const eph = await Ephemeris.initialize({
+  wasmModuleUri: new URL(
+    `${import.meta.env.BASE_URL}ephemeris/taiyin_web.mjs`,
+    location.href,
+  ),
+});
+```
+
+使用顶层 await 时设 `build.target: "es2022"`，模块 Worker 设 `worker.format: "es"`。
+安装测试覆盖开发服务器和生产构建预览，并在 `/release-smoke/` 非根路径下测试主线程
+及模块 Worker。这里没有承诺 SSR 支持，也不会自动猜测任意打包后 loader 的新位置。
