@@ -20,17 +20,21 @@ cover every native API; see the [interface inventory](docs/api-inventory.md).
 
 ## Build locally
 
-Install Node.js 22+ and activate an Emscripten SDK. Pass a Taiyin core checkout
-at `v1.1.0`, containing the experimental `experiments/wasm` bridge:
+Install Node.js 22+ and activate Emscripten **6.0.12**. Build an installable
+tarball from the pinned, hash-verified public core and test it in clean consumers:
 
 ```sh
 npm ci
-npm run build:wasm -- /path/to/taiyin-ephemeris
-npm run build
-node examples/quick-start.mjs
+npm run pack:local
+npm run test:package
 ```
 
-The Wasm build explicitly enables `web,node`. It does not change native APIs. Generated `.wasm`, loader JavaScript, `dist/`, and build directories are ignored. Build both steps after a clean clone; generated binaries are not committed.
+The build supports `web,worker,node`. The `.tgz` is written under `build/packages/`;
+generated binaries and build directories are ignored, not committed. No npm
+publication occurs. See [packaging and installation tests](docs/packaging.md)
+for offline archives, browser setup, deployment and verification scope.
+For C++ development, `npm run build:wasm -- /path/to/core` followed by
+`npm run build` still builds against an explicit local checkout.
 
 ## Quick start
 
@@ -59,7 +63,7 @@ Serve this repository over HTTP and run `npm run example:browser` for the local 
 
 ```js
 const eph = await Ephemeris.initialize({
-  wasmModuleUri: new URL("/assets/taiyin_web.js", location.href),
+  wasmModuleUri: new URL("/assets/taiyin_web.mjs", location.href),
 });
 const response = await fetch("/data/sun.opm2");
 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -129,6 +133,7 @@ npm test
 npm run test:types
 npm run test:integration
 npm run test:astronomy
+npm run test:package
 # Optional: compare real OPM2 loading with more native calendar oracle rows.
 TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
 npm run example:browser

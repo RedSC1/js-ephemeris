@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Installed js-ephemeris package test</title>
+<script type="importmap">
+  { "imports": { "js-ephemeris": "/pkg/dist/index.js" } }
+</script>
+<pre id="result">Running…</pre>
+<script type="module">
+  import * as E from "js-ephemeris";
+  import { exercisePackage } from "./scenario.mjs";
+  try {
+    const browser = await exercisePackage(E);
+    const workers = await Promise.all(
+      ["module", "module", "classic"].map(
+        (kind) =>
+          new Promise((resolve, reject) => {
+            const worker =
+              kind === "module"
+                ? new Worker("/smoke/browser-worker.mjs", { type: "module" })
+                : new Worker("/smoke/browser-classic-worker.js");
+            worker.onmessage = ({ data }) => {
+              worker.terminate();
+              data.error ? reject(new Error(data.error)) : resolve(data.value);
+            };
+            worker.onerror = (error) => {
+              worker.terminate();
+              reject(new Error(error.message));
+            };
+          }),
+      ),
+    );
+    globalThis.packageTestResult = { status: "PASS", browser, workers };
+  } catch (error) {
+    globalThis.packageTestResult = {
+      status: "FAIL",
+      error: error.stack ?? String(error),
+    };
+  }
+  document.querySelector("#result").textContent = JSON.stringify(
+    globalThis.packageTestResult,
+  );
+</script>

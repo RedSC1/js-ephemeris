@@ -39,18 +39,25 @@ The astronomy generator additionally produces a finite 107-operation adapter and
 
 ## Bundlers and Workers
 
-The default browser path loads the trusted classic Emscripten loader and instantiates its modularized `createTaiyinModule` factory. Node loads the generated CommonJS loader in `assets/`. Data files never become executable script.
+The default ESM loader in `assets/` is imported by URL and instantiates a fresh
+Emscripten module in Node, browsers and Workers. It does not require a DOM.
+Explicitly supplied legacy `.js` loaders retain the classic-script/CommonJS
+path. Data files never become executable script.
 
 For an environment that already imports the factory, inject it:
 
 ```js
 const eph = await Ephemeris.initialize({
-  wasmModuleUri: new URL("/assets/taiyin_web.js", location.href),
+  wasmModuleUri: new URL("/assets/taiyin_web.mjs", location.href),
   moduleFactory: (options) => createTaiyinModule(options),
 });
 ```
 
-A Worker has no DOM, so supply `moduleFactory` explicitly (for a classic Worker, load the trusted loader with `importScripts` first). Loader and Wasm asset deployment remains application/build-tool policy; no Vite/Webpack plugin is assumed.
+Both module and classic Workers can use the default ESM loader. A classic
+Worker imports the public JS API with dynamic `import()`. An explicitly supplied
+legacy classic loader still needs an injected factory in Workers. Loader and
+Wasm asset deployment remains application/build-tool policy; no Vite/Webpack
+plugin is assumed. See [installed-package testing](packaging.md).
 
 One instance is single-threaded; contexts are not transferable thread-safe handles. For parallel CPU work, create one runtime per Worker. There is no SharedArrayBuffer/pthread build in this first version and no COOP/COEP requirement just for the current single-threaded runtime. Node's asynchronous initializer does not turn subsequent synchronous calculations into parallel tasks.
 

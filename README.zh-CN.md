@@ -17,17 +17,18 @@
 
 ## 本地构建
 
-准备 Node.js 22+，并激活 Emscripten SDK。使用 Taiyin 内核 `v1.1.0`，目录需要包含
-实验中的 `experiments/wasm` 桥接：
+准备 Node.js 22+，并激活 **Emscripten 6.0.12**。以下命令从已锁定、经过 SHA-256
+校验的 public 内核生成安装包，再测试实际安装后的用法：
 
 ```sh
 npm ci
-npm run build:wasm -- /path/to/taiyin-ephemeris
-npm run build
-node examples/quick-start.mjs
+npm run pack:local
+npm run test:package
 ```
 
-构建生成 ESM JavaScript、TypeScript 声明、Emscripten loader 和 `.wasm`。构建产物均已 ignore，不提交到源码仓库。干净克隆后需要先构建 Wasm，再构建绑定。
+构建支持 `web,worker,node`，安装包生成在 `build/packages/`，不会发布 npm。
+二进制和构建目录都已 ignore，不提交源码仓库。详见[打包与安装验证](docs/packaging.zh-CN.md)。
+修改 C++ 时仍可用 `npm run build:wasm -- /path/to/core` 和 `npm run build` 做本地开发构建。
 
 ## 先算一个位置、一次日食和农历日期
 
@@ -54,7 +55,7 @@ console.log(
 
 ```js
 const eph = await Ephemeris.initialize({
-  wasmModuleUri: new URL("/assets/taiyin_web.js", location.href),
+  wasmModuleUri: new URL("/assets/taiyin_web.mjs", location.href),
 });
 const response = await fetch("/data/sun.opm2");
 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -124,6 +125,7 @@ npm test
 npm run test:types
 npm run test:integration
 npm run test:astronomy
+npm run test:package
 TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
 npm run example:browser
 ```
