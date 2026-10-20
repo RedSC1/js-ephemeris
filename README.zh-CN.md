@@ -12,19 +12,17 @@
 
 计算复用 Python、Dart 绑定所使用的同一套内核，浏览器和 Node.js 使用相同的 API。
 
-**1.1.0 发布准备中：** 该版本尚未发布到 npm，`private: true` 仍保留，
-直到明确批准发布才会移除。版本范围见 [CHANGELOG](CHANGELOG.md) 和[接口清单](docs/api-inventory.md)。
+1.1.0 的功能范围见 [CHANGELOG](CHANGELOG.md) 和[接口清单](docs/api-inventory.md)。
 
 ## 安装
 
-1.1.0 正式发布后：
+以下用法对应 **1.1.0**，npm 发布尚待执行；发布前可先安装 `build/packages/` 中对应的本地安装包。
 
 ```sh
 npm install js-ephemeris@1.1.0
 ```
 
-目前可先用 `npm install /path/to/js-ephemeris-1.1.0.tgz` 安装本地构建的包；
-npm 上现有的 0.0.x 是不同 API，不能直接照搬本文用法。
+本地构建后可使用 `npm install /path/to/js-ephemeris-1.1.0.tgz`。
 使用者不需要安装 C++ 编译器或 Emscripten。目标环境为 Node.js 22+ 和支持现代 ESM／WebAssembly 的浏览器。
 
 ## 三个独立 npm 包
@@ -47,7 +45,7 @@ npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
 默认紫微规则表仍嵌在共享 Wasm 中。每次工厂调用仍创建独立扩展 context，不改为隐式单例。
 如果只导入扩展的 TypeScript 类型，还需要 `import "js-bazi"` 或 `import "js-ziwei"`
 启用运行时方法；`import type` 会被编译器删除。
-单仓库维护，三个包分别发布；此处的安装命令用于正式发布后，目前仍未发布。
+三个包在同一仓库维护，统一使用 1.1.0 版本号，分别发布。
 
 ## 本地构建
 

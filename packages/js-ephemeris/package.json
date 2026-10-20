@@ -1,14 +1,14 @@
 {
   "name": "js-ephemeris",
   "version": "1.1.0",
-  "private": true,
   "description": "JavaScript/TypeScript astronomy and Chinese calendar library powered by Taiyin C++/WebAssembly for browsers, Workers and Node.js.",
   "type": "module",
   "license": "MPL-2.0",
   "author": "RedSC1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RedSC1/js-ephemeris.git"
+    "url": "git+https://github.com/RedSC1/js-ephemeris.git",
+    "directory": "packages/js-ephemeris"
   },
   "homepage": "https://github.com/RedSC1/js-ephemeris#readme",
   "bugs": {
@@ -61,5 +61,10 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
   }
 }

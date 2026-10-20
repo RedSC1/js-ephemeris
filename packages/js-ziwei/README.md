@@ -1,11 +1,22 @@
 # js-ziwei
 
+[中文说明](README.zh-CN.md)
+
 Optional Ziwei Dou Shu extension for [js-ephemeris](https://github.com/RedSC1/js-ephemeris).
-Requires the matching `js-ephemeris@1.1.0` peer package. Release preparation only: not published yet.
+Requires the matching `js-ephemeris@1.1.0` peer package. The 1.1.0 release is prepared;
+npm publication is pending. Before publication, install the matching local archives.
 
 ```sh
 npm install js-ephemeris@1.1.0 js-ziwei@1.1.0
 ```
+
+For local archives, install both packages in one command, replacing the paths as needed:
+
+```sh
+npm install /path/to/js-ephemeris-1.1.0.tgz /path/to/js-ziwei-1.1.0.tgz
+```
+
+## Quick start
 
 ```js
 import { Ephemeris, AstroDateTime } from "js-ephemeris";
@@ -22,10 +33,17 @@ console.log(
 eph.close();
 ```
 
+## Contexts and ownership
+
 Importing this package adds `ctx.ziwei()` to the existing context.
 Core alone does not expose this method. Each factory call creates a fresh calculator;
 reuse it for multiple charts. A custom `chineseCalendar` must belong to the same context.
 Closing the owning context/runtime closes its calculators and charts.
+
+Type-only imports do not enable runtime methods. Use `import "js-ziwei"` when no
+runtime value is otherwise imported from this extension.
+
+## Browser and Worker use
 
 No separate Wasm or second runtime is bundled or initialized: both optional packages
 share the core's Wasm. Worker applications should bundle their imports (for example
@@ -34,4 +52,7 @@ with Vite); browser import maps do not apply inside Workers.
 Default rule tables are embedded in the shared core Wasm. Custom TOML/JSON catalogs remain supported.
 See the repository's [API guide](https://github.com/RedSC1/js-ephemeris/blob/main/docs/api.md).
 
-MPL-2.0; third-party attribution is retained in the core and NOTICE.
+## License
+
+MPL-2.0; third-party attribution is retained in the core and [NOTICE](NOTICE).
+See [CHANGELOG](CHANGELOG.md) for the 1.1.0 release notes.

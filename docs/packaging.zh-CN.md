@@ -1,6 +1,7 @@
 # 本地打包与安装测试
 
-这些命令只生成本地产物，不会发布 npm；`private: true` 仍保留。
+这些命令只生成和验证本地产物，不会发布 npm。三个安装包已配置为公开 npm 包；
+仓库根目录仅作为工具 workspace，继续保留 `private: true`。
 [English](packaging.md)
 
 ## 准备环境
@@ -37,13 +38,15 @@ Playwright 仅供开发测试，安装后的库没有这项运行时依赖。
 npm run pack:local -- --core-archive /path/to/taiyin-v1.1.0.tar.gz
 ```
 
-生成三个安装包：`build/packages/js-ephemeris-<version>.tgz`、`js-bazi-<version>.tgz`、`js-ziwei-<version>.tgz`。包内包含 JS、类型声明、
-ESM loader、Wasm、公开文档和内核／第三方／Emscripten 运行时声明；不包含 DE 数据、
+生成三个安装包：`build/packages/js-ephemeris-<version>.tgz`、`js-bazi-<version>.tgz`、`js-ziwei-<version>.tgz`。核心包包含 JS、类型声明、
+ESM loader、Wasm、公开文档和内核／第三方／Emscripten 运行时声明；两个扩展只包含各自的
+JS API、类型声明、指南与许可声明，不附带第二份 Wasm。三个包均不包含 DE 数据、
 恒星表、原生 DLL、源码仓库或开发依赖。
 
 `build:package` 会检查真实 Wasm 的 C ABI、协议和库版本，再生成带文件哈希的
-`assets/build-info.json`。直接运行 `npm pack` 也会触发 `prepack`，拒绝缺失、被修改
-或过期的产物。JS 输出目录会先清理再编译，避免旧模块残留。
+`assets/build-info.json`。打包具体 workspace，例如 `npm pack --workspace js-ephemeris`，
+也会触发 `prepack`，拒绝缺失、被修改或过期的产物。
+JS 输出目录会先清理再编译，避免旧模块残留。
 改过声明文件或内核 pin 后，需要重新执行 `build:package`。
 每次构建都会重建源码目录与 CMake 构建目录，避免旧编译器缓存或时间戳较新的旧对象
 混入新包。SDK 声明目录也会清理重建，打包白名单只允许六个已声明的文件。
@@ -117,3 +120,24 @@ const eph = await Ephemeris.initialize({
 测试不会重新打包 CI 候选产物：原字节分别离线安装，先验证核心可独立使用，再验证每个扩展及组合使用。
 两个扩展只有核心 peer dependency，不含 Wasm／loader 或核心实现。
 浏览器主线程用 import map，未打包 Worker 只测试核心；Node Worker 和 Vite Worker 验证三个包。
+
+## 发布配置与手动确认
+
+三个包统一使用 `1.1.0`，指定 public access 和 `https://registry.npmjs.org/`，
+并填写各自在 monorepo 中的源码目录。扩展要求匹配的核心版本。
+根 workspace 保留 `private: true`，不是第四个要发布的包。
+
+构建脚本和 CI 都不会登录或发布 npm。对已经测试过的安装包，可只执行发布演练：
+
+```sh
+npm publish ./build/packages/js-ephemeris-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-bazi-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ziwei-1.1.0.tgz --dry-run --ignore-scripts
+```
+
+dry-run 不会上传，也不能证明真实发布鉴权通过或包名已被预留。
+完成 npm 登录并明确批准发布后，先发布已测试的核心安装包，确认 registry 能读取
+`js-ephemeris@1.1.0` 后，再发布两个扩展。不要发布根 workspace，也不要把扩展配到旧版 0.0.x 核心上。
+
+校验安装包时，必须使用**同一次构建**生成的 build-info 清单。
+同源码、同 SDK 的 Linux CI 与本机独立编译产物也可能哈希不同，不能混用清单。

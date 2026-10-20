@@ -83,6 +83,37 @@ function fixture(t) {
   save();
   return { root, write, info, save };
 }
+test("only the three release workspaces are configured for public npm publication", () => {
+  const tooling = json(resolve(root, "package.json"));
+  assert.equal(tooling.private, true);
+  assert.deepEqual(tooling.workspaces, ["packages/*"]);
+  const names = ["js-ephemeris", "js-bazi", "js-ziwei"];
+  const version = json(
+    resolve(root, "packages/js-ephemeris/package.json"),
+  ).version;
+  assert.equal(version, tooling.version);
+  for (const name of names) {
+    const pkg = json(resolve(root, "packages", name, "package.json"));
+    assert.equal(pkg.name, name);
+    assert.equal(pkg.version, version);
+    assert.notEqual(pkg.private, true);
+    assert.equal(pkg.license, "MPL-2.0");
+    assert.deepEqual(pkg.publishConfig, {
+      access: "public",
+      registry: "https://registry.npmjs.org/",
+      tag: "latest",
+    });
+    assert.equal(pkg.repository.directory, `packages/${name}`);
+    assert.ok(pkg.files.includes("README.md"));
+    assert.ok(pkg.files.includes("README.zh-CN.md"));
+    assert.ok(pkg.files.includes("CHANGELOG.md"));
+    if (name !== "js-ephemeris") {
+      assert.deepEqual(pkg.peerDependencies, { "js-ephemeris": version });
+      assert.equal(pkg.sideEffects, true);
+    }
+  }
+});
+
 test("prepack accepts a complete matching manifest", (t) => {
   const f = fixture(t);
   assert.equal(verifyPackageInputs(f.root).astronomyProtocolId, 123);

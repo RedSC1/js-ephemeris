@@ -14,23 +14,21 @@ TypeScript, running in browsers and Node.js through the
 The calculations share the core used by the Python and Dart bindings. Browser
 and Node.js applications use the same API.
 
-**1.1.0 release preparation:** this version is not yet published to npm.
-`private: true` remains enabled until publication is explicitly approved.
 See [CHANGELOG](CHANGELOG.md) and the [interface inventory](docs/api-inventory.md)
-for the release scope.
+for the 1.1.0 release scope.
 
 ## Installation
 
-After 1.1.0 is published:
+The commands below target **1.1.0**, which is prepared for npm publication.
+Until it appears on npm, install the matching local archives from `build/packages/`.
 
 ```sh
 npm install js-ephemeris@1.1.0
 ```
 
-Until then, install the locally built package with
-`npm install /path/to/js-ephemeris-1.1.0.tgz`; the registry's existing 0.0.x
-release has a different API. Consumers do not need a C++ compiler or Emscripten.
-Node.js 22+ and modern ESM/WebAssembly-capable browsers are the intended targets.
+For a local build, use `npm install /path/to/js-ephemeris-1.1.0.tgz`.
+Consumers do not need a C++ compiler or Emscripten. Node.js 22+ and modern
+ESM/WebAssembly-capable browsers are the intended targets.
 
 ## Three independent npm packages
 
@@ -53,7 +51,7 @@ No second Wasm is shipped or instantiated. Default Ziwei tables remain embedded 
 Each factory call still creates an independent extension context, not an implicit singleton.
 If you only need extension types, also use `import "js-bazi"` or `import "js-ziwei"`
 to enable its runtime methods; TypeScript-only imports are erased.
-The packages share one repository but are published separately. These installation commands apply after publication; all three remain unpublished.
+The packages share one repository and one 1.1.0 version line, but are published separately.
 
 ## Build locally
 
