@@ -9,21 +9,26 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve, join, extname, sep } from "node:path";
+import { resolve, join, extname, sep, basename } from "node:path";
 import { chromium, firefox, webkit } from "playwright-core";
 import {
   build as viteBuild,
   createServer as viteServer,
   preview as vitePreview,
 } from "vite";
-import { root, npm, run, json } from "./package-utils.mjs";
-import { cleanupInstalledTest } from "./package-test-cleanup.mjs";
+import { root, npm, run, json, sha256 } from "./package-utils.mjs";
+import {
+  cleanupInstalledTest,
+  closeViteServers,
+} from "./package-test-cleanup.mjs";
 import {
   requiredPackageInputs,
   verifyPackageInputs,
+  verifyInstalledPackageInputs,
 } from "./verify-package.mjs";
 
 const args = process.argv.slice(2);
@@ -32,14 +37,17 @@ const reportPath = resolve(root, "build/package-test-result.json");
 rmSync(reportPath, { force: true });
 let browserNames = ["chromium"];
 let testVite = false;
+let suppliedArchive;
 for (let index = 0; index < args.length; index++) {
   if (args[index] === "--vite") testVite = true;
   else if (args[index] === "--browsers" && args[index + 1]) {
     const value = args[++index];
     browserNames = value === "none" ? [] : value.split(",");
+  } else if (args[index] === "--archive" && args[index + 1]) {
+    suppliedArchive = resolve(args[++index]);
   } else
     throw new Error(
-      "Usage: npm run test:package -- [--browsers chromium,firefox,webkit|none] [--vite]",
+      "Usage: npm run test:package -- [--archive candidate.tgz] [--browsers chromium,firefox,webkit|none] [--vite]",
     );
 }
 const browserTypes = { chromium, firefox, webkit };
@@ -53,6 +61,7 @@ if (
   );
 
 async function checkPage(browser, url, expected, workerCount) {
+  console.log(`[package-test] Checking ${url}`);
   const page = await browser.newPage();
   try {
     const errors = [];
@@ -72,16 +81,32 @@ async function checkPage(browser, url, expected, workerCount) {
   }
 }
 
-verifyPackageInputs();
+const expectedBuild = verifyPackageInputs();
 const destination = resolve(root, "build/packages");
 mkdirSync(destination, { recursive: true });
 const [packed] = JSON.parse(
-  npm(["pack", "--json", "--silent", "--pack-destination", destination], {
-    encoding: "utf8",
-    stdio: "pipe",
-    maxBuffer: 8 * 1024 * 1024,
-  }),
+  npm(
+    suppliedArchive
+      ? [
+          "pack",
+          suppliedArchive,
+          "--dry-run",
+          "--ignore-scripts",
+          "--json",
+          "--silent",
+        ]
+      : ["pack", "--json", "--silent", "--pack-destination", destination],
+    {
+      encoding: "utf8",
+      stdio: "pipe",
+      maxBuffer: 8 * 1024 * 1024,
+    },
+  ),
 );
+// In supplied mode npm's dry-run is only an inventory read. Install these
+// original bytes, never a newly generated archive from this test job.
+const archive = suppliedArchive ?? resolve(destination, packed.filename);
+const archiveSha256 = sha256(archive);
 const files = packed.files.map(({ path }) => path);
 for (const required of [
   ...requiredPackageInputs,
@@ -113,10 +138,8 @@ try {
     resolve(app, "package.json"),
     JSON.stringify({ private: true, type: "module" }),
   );
-  copyFileSync(
-    resolve(destination, packed.filename),
-    resolve(app, "input.tgz"),
-  );
+  copyFileSync(archive, resolve(app, "input.tgz"));
+  assert.equal(sha256(resolve(app, "input.tgz")), archiveSha256);
   // Offline and scripts disabled: the installed artifact must be self-contained.
   npm(
     [
@@ -131,6 +154,7 @@ try {
     { cwd: app },
   );
   const installed = resolve(app, "node_modules/js-ephemeris");
+  verifyInstalledPackageInputs(installed, expectedBuild);
   assert.ok(
     lstatSync(installed).isDirectory() &&
       !lstatSync(installed).isSymbolicLink(),
@@ -259,15 +283,16 @@ try {
       console.log(
         `[package-test] ${name}: installed modules${testVite ? ", Vite dev and production" : ""}`,
       );
-      browser = await browserTypes[name].launch(
-        name !== "chromium"
+      browser = await browserTypes[name].launch({
+        timeout: 60000,
+        ...(name !== "chromium"
           ? {}
           : process.env.CHROME_BIN
             ? { executablePath: process.env.CHROME_BIN }
             : existsSync(chromium.executablePath())
               ? {}
-              : { channel: "chrome" },
-      );
+              : { channel: "chrome" }),
+      });
       await checkPage(
         browser,
         `http://127.0.0.1:${server.address().port}/smoke/browser.html`,
@@ -301,22 +326,15 @@ try {
       browser = undefined;
     }
   } finally {
-    try {
-      await dev?.close();
-    } finally {
-      if (production)
-        await new Promise((resolve, reject) =>
-          production.httpServer.close((error) =>
-            error ? reject(error) : resolve(),
-          ),
-        );
-    }
+    await closeViteServers(dev, production);
   }
   const report = {
     status: "PASS",
     package: `${packed.name}@${packed.version}`,
-    archive: packed.filename,
-    compressedBytes: packed.size,
+    archive: basename(archive),
+    archiveSha256,
+    suppliedArchive: suppliedArchive !== undefined,
+    compressedBytes: statSync(archive).size,
     unpackedBytes: packed.unpackedSize,
     nodeVersion: process.version,
     platform: process.platform,

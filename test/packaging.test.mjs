@@ -17,6 +17,7 @@ import { join, dirname, resolve } from "node:path";
 import {
   requiredPackageInputs,
   verifyPackageInputs,
+  verifyInstalledPackageInputs,
 } from "../scripts/verify-package.mjs";
 import {
   root,
@@ -31,7 +32,10 @@ import {
   refreshSdkNotices,
 } from "../scripts/package-build-inputs.mjs";
 import { sdkNotices } from "../scripts/verify-package.mjs";
-import { cleanupInstalledTest } from "../scripts/package-test-cleanup.mjs";
+import {
+  cleanupInstalledTest,
+  closeViteServers,
+} from "../scripts/package-test-cleanup.mjs";
 
 function corePin(bytes = "archive", revision = "a".repeat(40)) {
   const repository = "https://github.com/example/core";
@@ -82,6 +86,47 @@ function fixture(t) {
 test("prepack accepts a complete matching manifest", (t) => {
   const f = fixture(t);
   assert.equal(verifyPackageInputs(f.root).astronomyProtocolId, 123);
+});
+
+test("installed candidates validate against the build without source-tree files", (t) => {
+  const f = fixture(t);
+  rmSync(resolve(f.root, "src"), { recursive: true, force: true });
+  rmSync(resolve(f.root, "wasm-build.json"));
+  assert.equal(
+    verifyInstalledPackageInputs(f.root, f.info).packageVersion,
+    "1.1.0-dev.0",
+  );
+  f.write("assets/taiyin_web.wasm", "altered candidate");
+  assert.throws(
+    () => verifyInstalledPackageInputs(f.root, f.info),
+    /Missing or mismatched/,
+  );
+});
+
+test("installed candidates reject wrong identities and source provenance", (t) => {
+  const f = fixture(t);
+  const expected = structuredClone(f.info);
+  f.write(
+    "package.json",
+    JSON.stringify({ name: expected.packageName, version: "0.0.2" }),
+  );
+  assert.throws(
+    () => verifyInstalledPackageInputs(f.root, expected),
+    /candidate does not match/,
+  );
+  f.write(
+    "package.json",
+    JSON.stringify({
+      name: expected.packageName,
+      version: expected.packageVersion,
+    }),
+  );
+  f.info.pin.core.revision = "b".repeat(40);
+  f.save();
+  assert.throws(
+    () => verifyInstalledPackageInputs(f.root, expected),
+    /candidate does not match/,
+  );
 });
 test("prepack rejects missing verification metadata", (t) => {
   const f = fixture(t);
@@ -326,4 +371,50 @@ test("server close rejection or synchronous failure still removes the temporary 
     );
     assert.equal(existsSync(f.root), false);
   }
+});
+
+test("Vite preview lifecycle cleanup still runs when dev-server close rejects", async () => {
+  let closed = false;
+  await assert.rejects(
+    closeViteServers(
+      {
+        close: async () => {
+          throw new Error("dev close failed");
+        },
+      },
+      {
+        close: async () => {
+          closed = true;
+        },
+      },
+    ),
+    /dev close failed/,
+  );
+  assert.equal(closed, true);
+});
+
+test("Vite preview lifecycle executes plugin hooks and removes its signal listener", async (t) => {
+  const f = fixture(t);
+  const { preview } = await import("vite");
+  const signals = process.listeners("SIGTERM");
+  let hookCalled = false;
+  f.write("dist/index.html", "<!doctype html><title>Preview cleanup</title>");
+  const server = await preview({
+    root: f.root,
+    configFile: false,
+    preview: { host: "127.0.0.1", port: 0 },
+    plugins: [
+      {
+        name: "check-preview-close",
+        closePreviewServer() {
+          hookCalled = true;
+        },
+      },
+    ],
+  });
+  t.after(() => server.close());
+  await closeViteServers(undefined, server);
+  assert.equal(hookCalled, true);
+  assert.equal(server.httpServer.listening, false);
+  assert.deepEqual(process.listeners("SIGTERM"), signals);
 });

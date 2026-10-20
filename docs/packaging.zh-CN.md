@@ -18,6 +18,8 @@ npm exec -- playwright-core install chromium firefox webkit
 npm run test:package -- --browsers chromium,firefox,webkit --vite
 # 只测 Node，不要求安装浏览器：
 npm run test:package -- --browsers none
+# 原样测试指定候选包，CI 使用构建 job 上传的那一份：
+npm run test:package -- --archive build/packages/js-ephemeris-1.1.0.tgz --browsers chromium,firefox,webkit --vite
 ```
 
 没有测试浏览器时，可以用 `npx playwright-core install chromium` 安装。
@@ -70,8 +72,12 @@ ESM loader、Wasm、公开文档和内核／第三方／Emscripten 运行时声�
 
 兼容性 CI 在 Linux 编译一次 Wasm，之后 Linux／macOS／Windows 的 Node 22／24
 以及 Linux／macOS 的浏览器／Vite job 都复用同一份产物。
+每个测试 job 也会下载同一个 `npm-tarball`，通过 `--archive` 原样安装，不重新生成候选包；
+报告记录其 SHA-256，安装后的文件哈希和来源声明也会再次校验。
 代码 PR、main 代码改动或手动 dispatch 可以触发；纯文档修改不重新编译。
 workflow 只有只读权限，没有发布凭据或 npm 发布步骤。
+Vite 开发／预览服务器调用完整生命周期的关闭方法，释放插件清理 hook 和信号监听器，
+不只是关闭 HTTP 端口。
 
 ## 前端部署
 

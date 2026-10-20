@@ -21,6 +21,8 @@ npm exec -- playwright-core install chromium firefox webkit
 npm run test:package -- --browsers chromium,firefox,webkit --vite
 # Node-only CI jobs do not require a browser installation:
 npm run test:package -- --browsers none
+# Test an existing candidate verbatim (CI uses the build job's tarball):
+npm run test:package -- --archive build/packages/js-ephemeris-1.1.0.tgz --browsers chromium,firefox,webkit --vite
 ```
 
 If no browser is installed, `npx playwright-core install chromium` installs the
@@ -84,9 +86,14 @@ before each run. WebKit is Playwright's engine build, not Apple's Safari app.
 
 The compatibility CI builds Wasm once on Linux and downloads that artifact in
 Node 22/24 jobs on Linux/macOS/Windows and browser/Vite jobs on Linux/macOS.
+Every test job also downloads the exact `npm-tarball` artifact and passes it
+via `--archive`; no replacement archive is packed in those jobs. Its SHA-256
+is recorded in each report, and installed artifact hashes/provenance are checked.
 It runs for code changes in pull requests/main and can be dispatched manually.
 Documentation-only changes do not rebuild Wasm. No job has publish credentials,
 write permissions or an npm publication step.
+Vite dev and preview servers are closed through their lifecycle APIs so plugin
+cleanup hooks and signal listeners are released, not only their HTTP sockets.
 
 ## Loading installed assets
 

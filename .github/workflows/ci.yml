@@ -51,6 +51,8 @@ jobs:
     name: Build pinned Wasm once
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      package-version: ${{ steps.package-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,6 +60,10 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - id: package-version
+        name: Read package version
+        shell: bash
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
       - name: Install pinned Emscripten SDK
         shell: bash
         run: |
@@ -106,12 +112,16 @@ jobs:
         with:
           name: verified-wasm
           path: assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
+          path: build/candidate
       - run: npm test
       - run: npm run test:types
       - run: npm run test:integration
       - run: npm run test:astronomy
       - run: npm run test:bazi-reverse
-      - run: npm run test:package -- --browsers none
+      - run: npm run test:package -- --archive build/candidate/js-ephemeris-${{ needs.build.outputs.package-version }}.tgz --browsers none
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -124,7 +134,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14]
+        # macOS 14 forces Playwright's frozen WebKit 2251 override, rather
+        # than the current WebKit used on Linux and macOS 15+.
+        os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -138,8 +150,13 @@ jobs:
         with:
           name: verified-wasm
           path: assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
+          path: build/candidate
       - run: npx playwright-core install --with-deps chromium firefox webkit
-      - run: npm run test:package -- --browsers chromium,firefox,webkit --vite
+      - run: npm run test:package -- --archive build/candidate/js-ephemeris-${{ needs.build.outputs.package-version }}.tgz --browsers chromium,firefox,webkit --vite
+        timeout-minutes: 10
       - uses: actions/upload-artifact@v4
         if: always()
         with:

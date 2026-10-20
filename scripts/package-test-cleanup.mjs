@@ -1,5 +1,13 @@
 import { rmSync } from "node:fs";
 
+export async function closeViteServers(dev, production) {
+  try {
+    await dev?.close();
+  } finally {
+    await production?.close();
+  }
+}
+
 export async function cleanupInstalledTest({ browser, server, app }) {
   try {
     await browser?.close();

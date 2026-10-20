@@ -15,7 +15,7 @@ Worker; Vite **8.3.4** development and production builds also pass in these
 engines, including a module Worker and a non-root `/release-smoke/` base path.
 Node 25.9.0 was also tested during earlier packaging work.
 
-On Node 22.23.3, the unit/packaging suite passes **30 tests**, declarations
+On Node 22.23.3, the initial unit/packaging suite passes **30 tests**, declarations
 compile, the real-Wasm integration and astronomy suites each pass **4 tests**,
 and BaZi reverse lookup passes **171 assertions**. The installed consumer has
 no runtime dependencies and works without install scripts or source-tree links.
@@ -34,7 +34,17 @@ has therefore **not** been tested; WebKit coverage is reported separately.
 CI is configured for Node 22/24 on Linux/macOS/Windows plus Chromium, Firefox,
 WebKit and Vite on Linux/macOS, sharing a single verified Wasm build. This
 configuration is not evidence that those remote jobs have already run.
-The release is still gated on that matrix and the remaining checks below.
+The first CI run passed all six Node 22/24 jobs on Linux, macOS 14 and Windows,
+and the Linux Chromium/Firefox/WebKit/Vite job. Its macOS 14 browser job stalled
+during the WebKit phase and was cancelled, not counted as a pass. Playwright's pinned
+browser registry forces legacy WebKit revision 2251 on macOS 14, so browser CI
+now uses macOS 15 for the current WebKit build; Node coverage still includes
+macOS 14. Old WebKit on macOS 14 and Apple's Safari app are not claimed tested.
+
+Review follow-ups add four regression tests (34 total): exact installed-candidate
+hash/provenance checks and Vite preview lifecycle/plugin/signal cleanup. CI now
+installs the exact uploaded tarball instead of repacking it in each test job.
+The release is still gated on the updated matrix and the remaining checks below.
 
 ## Historical development verification — 2026-10-18
 
