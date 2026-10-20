@@ -1,6 +1,57 @@
 # Verification record
 
-Local development verification on 2026-10-18, macOS arm64, Node.js 25.9 and a real Chromium-based browser. Built using Emscripten 6.0.12, Release, no fast-math. Native ABI 11 / base bridge 1 remain intact, based on core branch commit `2dd0bc80` plus the local opt-in Wasm adapter additions. Astronomy transport adds a generated protocol signature and uses the existing C++ algorithms.
+## 1.1.0 release preparation — 2026-10-20
+
+The current package is built from public core **v1.1.0**, immutable revision
+`0c0ac41241624a45e74d2ab9d26da99038c8fa9c`, using Emscripten **6.0.12**,
+Release, without fast-math. ABI 11 / base bridge 1 and generated astronomy
+protocol checks are enforced before packaging. The package version is 1.1.0,
+but `private: true` is retained and nothing has been published.
+
+Local environment: macOS 27.0.1 ARM64. The actual installed tarball, not a
+source-tree link, has been exercised with Node **22.23.3**. Chromium **155** and
+Playwright WebKit **27.2** pass installed ESM, two module Workers and a classic
+Worker; Vite **8.3.4** development and production builds also pass in these
+engines, including a module Worker and a non-root `/release-smoke/` base path.
+Node 25.9.0 was also tested during earlier packaging work.
+
+On Node 22.23.3, the initial unit/packaging suite passes **30 tests**, declarations
+compile, the real-Wasm integration and astronomy suites each pass **4 tests**,
+and BaZi reverse lookup passes **171 assertions**. The installed consumer has
+no runtime dependencies and works without install scripts or source-tree links.
+
+Firefox **157** was attempted but exits before executing the test page with
+`Could not find profile folder`. A second installed Firefox build and different
+profile locations fail at the same startup stage. This matches the upstream
+[macOS 27 Firefox app-data protection report](https://github.com/microsoft/playwright/issues/42768);
+it is not a successful Firefox compatibility run. No privacy settings or
+browser security protections were changed to bypass this blocker.
+
+The system Safari WebDriver was also tried, but session creation reports that
+Safari's **Allow remote automation** setting is disabled. Apple's Safari app
+has therefore **not** been tested; WebKit coverage is reported separately.
+
+CI is configured for Node 22/24 on Linux/macOS/Windows plus Chromium, Firefox,
+WebKit and Vite on Linux/macOS, sharing a single verified Wasm build. This
+configuration is not evidence that those remote jobs have already run.
+The first CI run passed all six Node 22/24 jobs on Linux, macOS 14 and Windows,
+and the Linux Chromium/Firefox/WebKit/Vite job. Its macOS 14 browser job stalled
+during the WebKit phase and was cancelled, not counted as a pass. Playwright's pinned
+browser registry forces legacy WebKit revision 2251 on macOS 14, so browser CI
+now uses macOS 15 for the current WebKit build; Node coverage still includes
+macOS 14. Old WebKit on macOS 14 and Apple's Safari app are not claimed tested.
+
+Review follow-ups add four regression tests (34 total): exact installed-candidate
+hash/provenance checks and Vite preview lifecycle/plugin/signal cleanup. CI now
+installs the exact uploaded tarball instead of repacking it in each test job.
+The release is still gated on the updated matrix and the remaining checks below.
+
+## Historical development verification — 2026-10-18
+
+The following records describe the initial development build on macOS arm64,
+Node.js 25.9 and Chromium, based on core branch commit `2dd0bc80` and then-local
+adapter additions. They are historical numerical-oracle coverage, not the
+provenance of the current package or a new independent accuracy measurement.
 
 ## Executed checks
 
@@ -48,16 +99,16 @@ The custom-model suite checks position-only derivative flags, exact state callba
 
 These are local build artifacts, not promised release sizes. No DE data/star catalog is included. Compression results are transfer-size measurements; they do not describe Wasm memory usage. The current module starts with the C++ build's 64 MiB linear memory and can grow within its configured wasm32 limit.
 
-## Still to verify before release
+## Remaining verification
 
-- Platform/browser matrix, Safari and Firefox, Windows Node, and production bundlers/CSP.
-- Worker packaging and performance under real application workloads.
+- Remote CI matrix, Apple Safari, Firefox startup on this macOS host, and production CSP configurations.
+- Worker performance under real application workloads; installed Worker packaging is covered.
 - Dedicated JS benchmarks; no performance parity claim is made here.
 - Broader byte-format fixtures and malformed/resource-replacement failure tests.
 - Remaining facade APIs listed in [API coverage](api.md).
-- Source pinning, compiler-runtime license bundle, package naming and distribution layout.
+- Source pinning, compiler-runtime notices, npm naming and installed distribution layout are now covered by the packaging tests.
 
-Nothing has been published, tagged or pushed as part of this initial repository setup.
+No npm publication has been performed.
 
 ## BaZi reverse lookup (unreleased)
 

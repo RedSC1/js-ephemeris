@@ -12,8 +12,20 @@
 
 计算复用 Python、Dart 绑定所使用的同一套内核，浏览器和 Node.js 使用相同的 API。
 
-**开发预览：** 当前 `1.1.0-dev.0` 尚未发布到 npm，`package.json` 的 `private: true`
-会阻止误发布。Wasm 后端还未覆盖全部原生接口，具体范围见[接口清单](docs/api-inventory.md)。
+**1.1.0 发布准备中：** 该版本尚未发布到 npm，`private: true` 仍保留，
+直到明确批准发布才会移除。版本范围见 [CHANGELOG](CHANGELOG.md) 和[接口清单](docs/api-inventory.md)。
+
+## 安装
+
+1.1.0 正式发布后：
+
+```sh
+npm install js-ephemeris@1.1.0
+```
+
+目前可先用 `npm install /path/to/js-ephemeris-1.1.0.tgz` 安装本地构建的包；
+npm 上现有的 0.0.x 是不同 API，不能直接照搬本文用法。
+使用者不需要安装 C++ 编译器或 Emscripten。目标环境为 Node.js 22+ 和支持现代 ESM／WebAssembly 的浏览器。
 
 ## 本地构建
 
@@ -33,7 +45,7 @@ npm run test:package
 ## 先算一个位置、一次日食和农历日期
 
 ```js
-import { Ephemeris, Body, Ut1JulianDate } from "./dist/index.js";
+import { Ephemeris, Body, Ut1JulianDate } from "js-ephemeris";
 
 const eph = await Ephemeris.initialize();
 const ctx = eph.createContext();
@@ -76,7 +88,7 @@ import {
   ChineseCalendarConfig,
   BaziGender,
   ZiweiGender,
-} from "./dist/index.js";
+} from "js-ephemeris";
 
 const ctx = eph.createContext({
   chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),
@@ -126,6 +138,7 @@ npm run test:types
 npm run test:integration
 npm run test:astronomy
 npm run test:package
+npm run test:package -- --browsers chromium,firefox,webkit --vite
 TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
 npm run example:browser
 ```
@@ -133,6 +146,11 @@ npm run example:browser
 已在 Node 和真实浏览器跑位置/状态/批量、UTC 与 EOP 严格错误、显式估算、闰秒、三种农历模式、八字／自定义神煞、紫微本命／流运／太阳时钟／随机起盘／目录重载，以及全部 **39 个日月食桥接入口**。有 native 数值样本对照；这证明绑定口径一致，不等同于重新验证绝对天文精度。详见 [验证记录](docs/verification.md)。
 
 当前 Wasm 单线程，同一实例中的同步调用不能用 `Promise.all()` 加速。要并行计算，使用 Worker，每个 Worker 初始化自己的运行时。不跨 Worker 传活的 context/chart。
+
+兼容性 CI 只编译一次 Wasm，再把校验后的产物用于 Linux／macOS／Windows 的
+Node 22／24 与浏览器引擎／Vite 测试，不包含任何发布步骤。
+WebKit 测试不等于苹果发行的 Safari 应用测试；已运行结果与剩余限制见
+[验证记录](docs/verification.md)，Vite 的资源配置见[打包文档](docs/packaging.zh-CN.md)。
 
 ## 许可
 

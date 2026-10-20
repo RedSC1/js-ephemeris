@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, posix } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { root, json, sha256, validateCorePin } from "./package-utils.mjs";
 
 export const sdkNotices = {
@@ -49,6 +50,24 @@ export function verifyPackageInputs(directory = root) {
     throw new Error(
       "Stale Wasm build metadata. Run npm run build:package again.",
     );
+  verifyHashedInputs(directory, info);
+  return info;
+}
+
+export function verifyInstalledPackageInputs(directory, expected) {
+  const pkg = json(resolve(directory, "package.json"));
+  const info = json(resolve(directory, "assets/build-info.json"));
+  if (
+    pkg.name !== expected.packageName ||
+    pkg.version !== expected.packageVersion ||
+    !isDeepStrictEqual(info, expected)
+  )
+    throw new Error("Installed candidate does not match the verified build");
+  verifyHashedInputs(directory, info);
+  return info;
+}
+
+function verifyHashedInputs(directory, info) {
   for (const file of requiredPackageInputs) {
     const entry = info.files?.[file];
     if (
@@ -69,5 +88,4 @@ export function verifyPackageInputs(directory = root) {
       file.includes("\\")
     )
       throw new Error("Invalid build metadata path");
-  return info;
 }
