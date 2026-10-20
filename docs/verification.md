@@ -23,7 +23,7 @@ The four moved implementation files have unchanged calculation bodies.
 
 The extensions ship no loader or Wasm binary. The unchanged core Wasm still
 contains the C++ extension algorithms and default Ziwei tables. All package
-manifests remain private; no npm publication was performed.
+manifests remained private at the time of that verification; no npm publication was performed.
 
 ## 1.1.0 release preparation — 2026-10-20
 

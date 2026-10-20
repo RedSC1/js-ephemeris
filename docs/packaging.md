@@ -1,7 +1,8 @@
 # Building and testing an npm tarball
 
-These commands build local artifacts only. They do not publish to npm; the
-package remains `private: true`. [中文](packaging.zh-CN.md)
+These commands build and test local artifacts only. They do not publish to npm.
+The tooling workspace remains `private: true`; the three package manifests declare
+public npm publication settings. [中文](packaging.zh-CN.md)
 
 ## Prerequisites
 
@@ -44,14 +45,15 @@ To use an already downloaded archive, with the same checksum validation:
 npm run pack:local -- --core-archive /path/to/taiyin-v1.1.0.tar.gz
 ```
 
-The output is three archives under `build/packages/`: `js-ephemeris-<version>.tgz`, `js-bazi-<version>.tgz` and `js-ziwei-<version>.tgz`. It contains the JS
-facade, declarations, ESM loader, Wasm, public documentation, core/third-party
-notices and Emscripten/runtime license files. It does not contain DE datasets,
-star catalogs, native DLLs, source checkouts or development dependencies.
+The output is three archives under `build/packages/`: `js-ephemeris-<version>.tgz`, `js-bazi-<version>.tgz` and `js-ziwei-<version>.tgz`. The core archive contains the JS facade, declarations, ESM loader, Wasm,
+public documentation, core/third-party notices and Emscripten/runtime license files.
+The two extension archives contain only their JS APIs, declarations, guides and notices.
+None of the archives contains DE datasets, star catalogs, native DLLs, source checkouts
+or development dependencies.
 
 `build:package` verifies the Wasm's C ABI, bridge protocol and library version,
-then records artifact hashes in `assets/build-info.json`. Ordinary `npm pack`
-runs a `prepack` check: missing, changed or stale inputs require rebuilding.
+then records artifact hashes in `assets/build-info.json`. Packing a workspace,
+for example `npm pack --workspace js-ephemeris`, runs a `prepack` check: missing, changed or stale inputs require rebuilding.
 JS output is cleaned and rebuilt so removed modules cannot linger in a tarball.
 After changing a notice or the core pin, run `build:package` again.
 Each build recreates the source and CMake build directories, so cached compilers
@@ -166,3 +168,29 @@ never repacked. Tests first use core alone, then each extension independently an
 Extensions have only a core peer dependency and contain no Wasm, loader or duplicate core implementation.
 Browser main-thread tests use an import map; unbundled Workers test core only.
 Node Workers and Vite Workers exercise all three packages.
+
+## Release configuration and manual approval
+
+The three package manifests use version `1.1.0`, explicit public access and the
+`https://registry.npmjs.org/` registry. Each manifest identifies its monorepo source directory;
+the optional packages require the matching core version. The repository-root
+workspace is private and is not a fourth distributable package.
+
+No build script or CI job logs into npm or publishes. To rehearse publication of
+an already tested archive without uploading it:
+
+```sh
+npm publish ./build/packages/js-ephemeris-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-bazi-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ziwei-1.1.0.tgz --dry-run --ignore-scripts
+```
+
+Dry-run success does not verify real publication authentication or reserve a name.
+After npm login and explicit publication approval, publish the tested core archive
+first, wait for `js-ephemeris@1.1.0` to be readable from the registry, then publish
+the two optional archives. Do not publish the repository root, and do not install
+an extension against the old 0.0.x core.
+
+Archive hashes must be compared with the build-info manifest from the **same build**.
+Do not compare a Linux CI archive against an independently compiled local Wasm
+manifest, even when both use the same source revision and SDK version.
