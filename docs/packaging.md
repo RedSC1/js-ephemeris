@@ -27,7 +27,10 @@ dependency of the installed package.
 `wasm-build.json` records the public C++ tag, exact revision, archive SHA-256,
 Emscripten version and environments. `build:package` downloads the archive
 (network required on the first build), verifies it and extracts a fresh source
-tree under ignored `build/package/`. It never chooses an adjacent checkout.
+tree under ignored `build/package/`. The archive URL must contain the declared
+immutable revision, not a movable tag. Missing or checksum-mismatched cached
+archives are downloaded again; an explicitly supplied archive fails closed on
+a checksum mismatch. It never chooses an adjacent checkout.
 To use an already downloaded archive, with the same checksum validation:
 
 ```sh
@@ -44,6 +47,9 @@ then records artifact hashes in `assets/build-info.json`. Ordinary `npm pack`
 runs a `prepack` check: missing, changed or stale inputs require rebuilding.
 JS output is cleaned and rebuilt so removed modules cannot linger in a tarball.
 After changing a notice or the core pin, run `build:package` again.
+Each build recreates the source and CMake build directories, so cached compilers
+and newer object files cannot survive a pin change. Generated SDK notices are
+also recreated; only the six declared notice files are eligible for packaging.
 
 For editing the C++ core, `build:wasm -- /path/to/core` remains a development
 entry point. Those outputs do not replace the verified package-build step.
@@ -62,7 +68,8 @@ project using **offline mode and disabled install scripts**, then checks:
   embedded in the package. The HTTP test server serves only installed files
   and test fixtures on a loopback address, never the development repository.
 
-The test removes its temporary project and writes
+Browser and server shutdown are independent cleanup steps: a shutdown failure
+does not skip removal of the temporary project. The test writes
 `build/package-test-result.json`. These are deployment/consistency tests, not
 an independent astronomical-accuracy assessment. Current local coverage is
 macOS ARM64, Node 25 and Chromium; a cross-platform/minimum-Node CI matrix is

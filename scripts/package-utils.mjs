@@ -7,6 +7,17 @@ export const root = fileURLToPath(new URL("../", import.meta.url));
 export const json = (file) => JSON.parse(readFileSync(file, "utf8"));
 export const sha256 = (file) =>
   createHash("sha256").update(readFileSync(file)).digest("hex");
+export function validateCorePin(core) {
+  if (
+    !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(core?.repository ?? "") ||
+    !/^[a-f0-9]{40}$/.test(core?.revision ?? "") ||
+    !/^[a-f0-9]{64}$/.test(core?.archiveSha256 ?? "") ||
+    core.archiveUrl !== `${core.repository}/archive/${core.revision}.tar.gz`
+  )
+    throw new Error(
+      "Core archive URL must match the pinned repository/revision and SHA-256",
+    );
+}
 export function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: root,

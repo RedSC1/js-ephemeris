@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, posix } from "node:path";
-import { root, json, sha256 } from "./package-utils.mjs";
+import { root, json, sha256, validateCorePin } from "./package-utils.mjs";
 
 export const sdkNotices = {
   "EMSCRIPTEN-LICENSE.txt": "LICENSE",
@@ -23,6 +23,7 @@ export const requiredPackageInputs = [
 export function verifyPackageInputs(directory = root) {
   const pkg = json(resolve(directory, "package.json"));
   const pin = json(resolve(directory, "wasm-build.json"));
+  validateCorePin(pin.core);
   const manifest = resolve(directory, "assets/build-info.json");
   if (!existsSync(manifest))
     throw new Error(

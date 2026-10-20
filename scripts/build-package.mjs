@@ -1,21 +1,23 @@
 import {
   copyFileSync,
-  existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { root, run, json, sha256 } from "./package-utils.mjs";
 import {
-  sdkNotices,
   requiredPackageInputs,
   verifyPackageInputs,
 } from "./verify-package.mjs";
+import {
+  prepareCoreArchive,
+  prepareCoreBuild,
+  refreshSdkNotices,
+} from "./package-build-inputs.mjs";
 
 const pin = json(resolve(root, "wasm-build.json"));
 const pkg = json(resolve(root, "package.json"));
@@ -39,29 +41,12 @@ const sdk = run("em-config", ["EMSCRIPTEN_ROOT"], {
 const stage = resolve(root, "build/package");
 mkdirSync(stage, { recursive: true });
 const archive = resolve(stage, "core.tar.gz");
-if (args.length) {
-  if (sha256(resolve(args[1])) !== pin.core.archiveSha256)
-    throw new Error("Core archive SHA-256 mismatch");
-  if (resolve(args[1]) !== archive) copyFileSync(resolve(args[1]), archive);
-} else if (!existsSync(archive)) {
-  console.log(`[package] Downloading ${pin.core.tag}`);
-  const response = await fetch(pin.core.archiveUrl, {
-    signal: AbortSignal.timeout(300000),
-  });
-  if (!response.ok) throw new Error(`Core download: HTTP ${response.status}`);
-  await writeFile(archive, new Uint8Array(await response.arrayBuffer()));
-}
-if (sha256(archive) !== pin.core.archiveSha256)
-  throw new Error("Core archive SHA-256 mismatch");
-const source = resolve(stage, "core");
-// Re-extract the verified archive; do not trust a previously edited source tree.
-rmSync(source, { recursive: true, force: true });
-mkdirSync(source, { recursive: true });
+await prepareCoreArchive({ core: pin.core, archive, providedArchive: args[1] });
+const { source, build } = prepareCoreBuild(stage);
 run("tar", ["-xzf", archive, "--strip-components=1", "-C", source]);
 console.log(
   `[package] Building ${pin.core.tag} with Emscripten ${pin.emscripten}`,
 );
-const build = resolve(stage, "wasm");
 run("emcmake", [
   "cmake",
   "-S",
@@ -75,8 +60,8 @@ run("emcmake", [
 ]);
 run("cmake", ["--build", build, "--target", "taiyin_web", "--parallel", "10"]);
 const assets = resolve(root, "assets");
-mkdirSync(resolve(assets, "licenses"), { recursive: true });
 rmSync(resolve(assets, "build-info.json"), { force: true });
+refreshSdkNotices(sdk, assets);
 copyFileSync(
   resolve(build, "taiyin_web.js"),
   resolve(assets, "taiyin_web.mjs"),
@@ -86,8 +71,6 @@ copyFileSync(
   resolve(assets, "taiyin_web.wasm"),
 );
 copyFileSync(resolve(source, "NOTICE"), resolve(root, "CORE-NOTICE"));
-for (const [name, file] of Object.entries(sdkNotices))
-  copyFileSync(resolve(sdk, file), resolve(assets, "licenses", name));
 const factory = (
   await import(pathToFileURL(resolve(assets, "taiyin_web.mjs")).href)
 ).default;

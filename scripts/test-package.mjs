@@ -8,13 +8,13 @@ import {
   mkdtempSync,
   readFileSync,
   realpathSync,
-  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join, extname, sep } from "node:path";
 import { chromium } from "playwright-core";
 import { root, npm, run, json } from "./package-utils.mjs";
+import { cleanupInstalledTest } from "./package-test-cleanup.mjs";
 import {
   requiredPackageInputs,
   verifyPackageInputs,
@@ -38,6 +38,13 @@ for (const required of [
   "dist/index.d.ts",
 ])
   assert.ok(files.includes(required), `Missing tarball entry: ${required}`);
+assert.deepEqual(
+  files.filter((file) => file.startsWith("assets/licenses/")).sort(),
+  requiredPackageInputs
+    .filter((file) => file.startsWith("assets/licenses/"))
+    .sort(),
+  "Only the declared SDK notices may be packaged",
+);
 assert.ok(
   !files.some(
     (file) =>
@@ -206,7 +213,5 @@ try {
   );
   console.log(JSON.stringify(report, null, 2));
 } finally {
-  await browser?.close();
-  if (server) await new Promise((resolve) => server.close(resolve));
-  rmSync(app, { recursive: true, force: true });
+  await cleanupInstalledTest({ browser, server, app });
 }
