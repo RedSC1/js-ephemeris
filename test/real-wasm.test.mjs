@@ -2,9 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { Ephemeris } from "../dist/index.js";
-import { AstroDateTime } from "../dist/index.js";
-import { Body, PositionFlag, ResultFlag, TtJulianDate } from "../dist/index.js";
+import { Ephemeris } from "./all-packages.mjs";
+import { AstroDateTime } from "./all-packages.mjs";
+import {
+  Body,
+  PositionFlag,
+  ResultFlag,
+  TtJulianDate,
+} from "./all-packages.mjs";
 import { runScenarios, exerciseEclipses } from "./scenarios.mjs";
 import { runExtendedScenarios } from "./extended-scenarios.mjs";
 const reference = JSON.parse(

@@ -1,5 +1,5 @@
-import * as E from "../dist/index.js";
-import { astronomyOperations } from "../dist/internal/astronomy-operations.generated.js";
+import * as E from "./all-packages.mjs";
+import { astronomyOperations } from "../packages/js-ephemeris/dist/internal/astronomy-operations.generated.js";
 export const starText = `TSF1
 version=1
 star_count=1

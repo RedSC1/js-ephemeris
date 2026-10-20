@@ -2,6 +2,8 @@
 
 ## 1.1.0 — Unreleased
 
+- Split the npm distribution into `js-ephemeris`, `js-bazi` and `js-ziwei`, matching the Dart package boundaries. Optional imports augment the existing context; extensions share one core/Wasm and do not duplicate binaries.
+- Verify core-only, each extension separately, and combined offline installs; keep all packages private pending explicit release approval.
 - JavaScript/TypeScript bindings to the Taiyin C++ 1.1.0 WebAssembly core,
   shared by Node.js, browsers and Workers. Initialization is asynchronous;
   calculations are synchronous and return named `{ value, flags }` results.

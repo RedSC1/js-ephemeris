@@ -20,7 +20,14 @@ import {
   createServer as viteServer,
   preview as vitePreview,
 } from "vite";
-import { root, npm, run, json, sha256 } from "./package-utils.mjs";
+import {
+  root,
+  npm,
+  run,
+  json,
+  sha256,
+  packageNames,
+} from "./package-utils.mjs";
 import {
   cleanupInstalledTest,
   closeViteServers,
@@ -60,7 +67,13 @@ if (
     "Choose distinct supported browsers; --vite requires a browser",
   );
 
-async function checkPage(browser, url, expected, workerCount) {
+async function checkPage(
+  browser,
+  url,
+  expected,
+  workerCount,
+  workerExtensions = true,
+) {
   console.log(`[package-test] Checking ${url}`);
   const page = await browser.newPage();
   try {
@@ -75,7 +88,14 @@ async function checkPage(browser, url, expected, workerCount) {
     assert.deepEqual(errors, []);
     assert.deepEqual(result.browser, expected);
     assert.equal(result.workers.length, workerCount);
-    result.workers.forEach((worker) => assert.deepEqual(worker, expected));
+    result.workers.forEach((worker) =>
+      assert.deepEqual(
+        worker,
+        workerExtensions
+          ? expected
+          : { ...expected, pillars: null, anchors: null },
+      ),
+    );
   } finally {
     await page.close();
   }
@@ -84,53 +104,96 @@ async function checkPage(browser, url, expected, workerCount) {
 const expectedBuild = verifyPackageInputs();
 const destination = resolve(root, "build/packages");
 mkdirSync(destination, { recursive: true });
-const [packed] = JSON.parse(
-  npm(
-    suppliedArchive
-      ? [
-          "pack",
-          suppliedArchive,
-          "--dry-run",
-          "--ignore-scripts",
-          "--json",
-          "--silent",
-        ]
-      : ["pack", "--json", "--silent", "--pack-destination", destination],
-    {
-      encoding: "utf8",
-      stdio: "pipe",
-      maxBuffer: 8 * 1024 * 1024,
-    },
-  ),
-);
-// In supplied mode npm's dry-run is only an inventory read. Install these
-// original bytes, never a newly generated archive from this test job.
-const archive = suppliedArchive ?? resolve(destination, packed.filename);
-const archiveSha256 = sha256(archive);
-const files = packed.files.map(({ path }) => path);
-for (const required of [
-  ...requiredPackageInputs,
-  "assets/build-info.json",
-  "dist/index.js",
-  "dist/index.d.ts",
-])
-  assert.ok(files.includes(required), `Missing tarball entry: ${required}`);
-assert.deepEqual(
-  files.filter((file) => file.startsWith("assets/licenses/")).sort(),
-  requiredPackageInputs
-    .filter((file) => file.startsWith("assets/licenses/"))
-    .sort(),
-  "Only the declared SDK notices may be packaged",
-);
-assert.ok(
-  !files.some(
-    (file) =>
-      /^(src|scripts|test|build|node_modules|private)\//.test(file) ||
-      /\.(opm2|bsp|spk|tkc1|tsc1)$/.test(file) ||
-      file === ".npmrc" ||
-      file === ".env",
-  ),
-);
+
+const candidates = packageNames.map((name) => {
+  const version = json(resolve(root, "packages", name, "package.json")).version;
+  const supplied =
+    suppliedArchive === undefined
+      ? undefined
+      : name === "js-ephemeris"
+        ? suppliedArchive
+        : resolve(suppliedArchive, "..", `${name}-${version}.tgz`);
+  const [packed] = JSON.parse(
+    npm(
+      supplied
+        ? [
+            "pack",
+            supplied,
+            "--dry-run",
+            "--ignore-scripts",
+            "--json",
+            "--silent",
+          ]
+        : [
+            "pack",
+            "--workspace",
+            name,
+            "--json",
+            "--silent",
+            "--pack-destination",
+            destination,
+          ],
+      { encoding: "utf8", stdio: "pipe", maxBuffer: 8 * 1024 * 1024 },
+    ),
+  );
+  assert.equal(packed.name, name);
+  assert.equal(packed.version, version);
+  const archive = supplied ?? resolve(destination, packed.filename);
+  const files = packed.files.map(({ path }) => path);
+  for (const file of [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+  ])
+    assert.ok(files.includes(file), `Missing ${name} entry: ${file}`);
+  assert.ok(
+    !files.some(
+      (file) =>
+        /^(src|scripts|test|build|node_modules|private)\//.test(file) ||
+        /\.(opm2|bsp|spk|tkc1|tsc1)$/.test(file) ||
+        file === ".npmrc" ||
+        file === ".env",
+    ),
+  );
+  if (name === "js-ephemeris") {
+    for (const file of [
+      ...requiredPackageInputs,
+      "assets/build-info.json",
+      "dist/extension-host.js",
+    ])
+      assert.ok(files.includes(file), `Missing core entry: ${file}`);
+    assert.deepEqual(
+      files.filter((file) => file.startsWith("assets/licenses/")).sort(),
+      requiredPackageInputs
+        .filter((file) => file.startsWith("assets/licenses/"))
+        .sort(),
+    );
+    for (const file of [
+      "bazi.js",
+      "shen-sha.js",
+      "ziwei.js",
+      "ziwei-catalog.js",
+    ])
+      assert.ok(
+        !files.includes("dist/" + file),
+        `Extension leaked into core: ${file}`,
+      );
+  } else {
+    assert.ok(
+      !files.some(
+        (file) =>
+          file.startsWith("assets/") ||
+          file.endsWith(".wasm") ||
+          file === "dist/runtime.js",
+      ),
+      "Optional packages must not contain another core or Wasm",
+    );
+  }
+  return { name, packed, archive, files, archiveSha256: sha256(archive) };
+});
+const [{ packed, archive, files, archiveSha256 }] = candidates;
 const app = mkdtempSync(join(tmpdir(), "js-ephemeris-installed-"));
 let browser, server;
 try {
@@ -138,21 +201,48 @@ try {
     resolve(app, "package.json"),
     JSON.stringify({ private: true, type: "module" }),
   );
-  copyFileSync(archive, resolve(app, "input.tgz"));
-  assert.equal(sha256(resolve(app, "input.tgz")), archiveSha256);
-  // Offline and scripts disabled: the installed artifact must be self-contained.
-  npm(
-    [
-      "install",
-      "./input.tgz",
-      "--offline",
-      "--ignore-scripts",
-      "--no-audit",
-      "--no-fund",
-      "--package-lock=false",
-    ],
-    { cwd: app },
-  );
+
+  for (const candidate of candidates) {
+    const filename = `${candidate.name}.tgz`;
+    copyFileSync(candidate.archive, resolve(app, filename));
+    assert.equal(sha256(resolve(app, filename)), candidate.archiveSha256);
+    npm(
+      [
+        "install",
+        `./${filename}`,
+        "--offline",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        "--package-lock=false",
+      ],
+      { cwd: app },
+    );
+    // A fresh process prevents an already imported extension from masking a
+    // missing package boundary. Only the explicitly imported extension appears.
+    const extension = candidate.name === "js-bazi" ? "bazi" : "ziwei";
+    run(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        candidate.name === "js-ephemeris"
+          ? `import assert from "node:assert/strict"; import * as E from "js-ephemeris";
+      assert.equal(E.BaziContext, undefined); assert.equal(E.ZiweiContext, undefined);
+      const eph = await E.Ephemeris.initialize(); const ctx = eph.createContext();
+      assert.equal(ctx.bazi, undefined); assert.equal(ctx.ziwei, undefined);
+      assert.ok(Number.isFinite(ctx.position.atUt1(E.Body.sun, E.Ut1JulianDate.fromDouble(2460310.5)).value.values[0]));
+      eph.close();`
+          : `import assert from "node:assert/strict"; import * as E from "js-ephemeris"; import "js-${extension}";
+      const eph = await E.Ephemeris.initialize(); const ctx = eph.createContext();
+      assert.equal(typeof ctx.${extension}, "function");
+      assert.equal(ctx.${extension === "bazi" ? "ziwei" : "bazi"}, undefined);
+      const child = ctx.${extension}(); eph.close();
+      assert.throws(() => ctx.${extension}(), E.ClosedContextError);`,
+      ],
+      { cwd: app, timeout: 180000 },
+    );
+  }
   const installed = resolve(app, "node_modules/js-ephemeris");
   verifyInstalledPackageInputs(installed, expectedBuild);
   assert.ok(
@@ -163,13 +253,16 @@ try {
     !existsSync(resolve(installed, "src")) &&
       !existsSync(resolve(installed, "node_modules")),
   );
-  for (const file of files) {
-    const contents = readFileSync(resolve(installed, file));
-    assert.ok(
-      !contents.includes(Buffer.from(root.replace(/\/$/, ""))),
-      `Build-machine path leaked in ${file}`,
-    );
-  }
+  for (const candidate of candidates)
+    for (const file of candidate.files) {
+      const contents = readFileSync(
+        resolve(app, "node_modules", candidate.name, file),
+      );
+      assert.ok(
+        !contents.includes(Buffer.from(root.replace(/\/$/, ""))),
+        `Build-machine path leaked in ${file}`,
+      );
+    }
   const smoke = resolve(app, "smoke");
   mkdirSync(smoke);
   for (const file of [
@@ -180,6 +273,7 @@ try {
     "browser-worker.mjs",
     "browser-classic-worker.js",
     "types.ts",
+    "core-types.ts",
   ])
     copyFileSync(resolve(root, "test/package", file), resolve(smoke, file));
   const reports = JSON.parse(
@@ -190,23 +284,24 @@ try {
       timeout: 180000,
     }),
   );
-  run(
-    process.execPath,
-    [
-      resolve(root, "node_modules/typescript/bin/tsc"),
-      "--noEmit",
-      "--strict",
-      "--target",
-      "ES2022",
-      "--module",
-      "NodeNext",
-      "--moduleResolution",
-      "NodeNext",
-      "--skipLibCheck",
-      resolve(smoke, "types.ts"),
-    ],
-    { cwd: app },
-  );
+  for (const typeTest of ["core-types.ts", "types.ts"])
+    run(
+      process.execPath,
+      [
+        resolve(root, "node_modules/typescript/bin/tsc"),
+        "--noEmit",
+        "--strict",
+        "--target",
+        "ES2022",
+        "--module",
+        "NodeNext",
+        "--moduleResolution",
+        "NodeNext",
+        "--skipLibCheck",
+        resolve(smoke, typeTest),
+      ],
+      { cwd: app },
+    );
   const contentTypes = {
     ".js": "text/javascript",
     ".mjs": "text/javascript",
@@ -221,9 +316,13 @@ try {
       );
       const base = path.startsWith("/pkg/")
         ? installed
-        : path.startsWith("/smoke/")
-          ? smoke
-          : null;
+        : path.startsWith("/bazi/")
+          ? resolve(app, "node_modules/js-bazi")
+          : path.startsWith("/ziwei/")
+            ? resolve(app, "node_modules/js-ziwei")
+            : path.startsWith("/smoke/")
+              ? smoke
+              : null;
       if (!base) throw new Error("Not served");
       const file = realpathSync(
         resolve(base, "." + path.slice(path.indexOf("/", 1))),
@@ -298,6 +397,7 @@ try {
         `http://127.0.0.1:${server.address().port}/smoke/browser.html`,
         reports.node,
         3,
+        false,
       );
       if (testVite) {
         for (const http of [dev.httpServer, production.httpServer])
@@ -331,6 +431,13 @@ try {
   const report = {
     status: "PASS",
     package: `${packed.name}@${packed.version}`,
+    packages: candidates.map((c) => ({
+      name: c.name,
+      version: c.packed.version,
+      archive: basename(c.archive),
+      sha256: c.archiveSha256,
+      bytes: statSync(c.archive).size,
+    })),
     archive: basename(archive),
     archiveSha256,
     suppliedArchive: suppliedArchive !== undefined,

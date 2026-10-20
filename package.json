@@ -1,7 +1,8 @@
 {
-  "name": "js-ephemeris",
+  "name": "js-ephemeris-workspace",
   "version": "1.1.0",
   "private": true,
+  "files": [],
   "description": "JavaScript/TypeScript ephemeris library powered by Taiyin C++/WebAssembly: planetary positions, eclipses, Chinese calendars, BaZi and Ziwei for browsers and Node.js.",
   "type": "module",
   "license": "MPL-2.0",
@@ -23,51 +24,19 @@
     "bazi",
     "ziwei"
   ],
-  "exports": {
-    "./assets/taiyin_web.mjs": "./assets/taiyin_web.mjs",
-    "./assets/taiyin_web.wasm": "./assets/taiyin_web.wasm",
-    "./assets/build-info.json": "./assets/build-info.json",
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "assets/taiyin_web.mjs",
-    "assets/taiyin_web.wasm",
-    "assets/build-info.json",
-    "assets/package.json",
-    "assets/README.md",
-    "assets/licenses/EMSCRIPTEN-LICENSE.txt",
-    "assets/licenses/EMSCRIPTEN-AUTHORS.txt",
-    "assets/licenses/MUSL-COPYRIGHT.txt",
-    "assets/licenses/LIBCXX-LICENSE.txt",
-    "assets/licenses/LIBCXXABI-LICENSE.txt",
-    "assets/licenses/COMPILER-RT-LICENSE.txt",
-    "docs",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "LICENSE",
-    "NOTICE",
-    "CORE-NOTICE",
-    "THIRD_PARTY_NOTICES.txt"
-  ],
   "scripts": {
     "build": "node scripts/build-js.mjs",
     "build:package": "node scripts/build-package.mjs",
     "pack:local": "node scripts/pack-local.mjs",
-    "prepack": "node scripts/prepack.mjs",
     "test:package": "node scripts/test-package.mjs",
-    "check": "tsc -p tsconfig.json --noEmit",
+    "check": "npm run build && tsc -p tsconfig.type-tests.json",
     "test:types": "npm run build && tsc -p tsconfig.type-tests.json",
     "test": "npm run build && node --test test/unit.test.mjs test/packaging.test.mjs",
-    "test:integration": "npm run build && node --test test/real-wasm.test.mjs",
+    "test:integration": "npm run build && node --test test/real-wasm.test.mjs test/extensions.test.mjs",
     "test:astronomy": "npm run build && node --test test/astronomy.test.mjs",
     "test:bazi-reverse": "npm run build && node --test test/bazi-reverse.test.mjs",
     "build:wasm": "node scripts/build-wasm.mjs",
-    "format": "prettier --write src scripts test examples docs README.md README.zh-CN.md package.json tsconfig.json",
+    "format": "prettier --write src scripts test examples docs README.md README.zh-CN.md CHANGELOG.md package.json tsconfig.json 'packages/*/src/**/*.ts' 'packages/*/package.json' 'packages/*/tsconfig.json' packages/js-bazi/README.md packages/js-ziwei/README.md packages/js-bazi/CHANGELOG.md packages/js-ziwei/CHANGELOG.md",
     "example:browser": "node scripts/serve-example.mjs"
   },
   "engines": {
@@ -79,5 +48,8 @@
     "prettier": "^3.9.10",
     "typescript": "6.0.3",
     "vite": "8.3.4"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

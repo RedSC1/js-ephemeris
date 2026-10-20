@@ -2,11 +2,21 @@
 <meta charset="utf-8" />
 <title>Installed js-ephemeris package test</title>
 <script type="importmap">
-  { "imports": { "js-ephemeris": "/pkg/dist/index.js" } }
+  {
+    "imports": {
+      "js-ephemeris": "/pkg/dist/index.js",
+      "js-ephemeris/extension-host": "/pkg/dist/extension-host.js",
+      "js-bazi": "/bazi/dist/index.js",
+      "js-ziwei": "/ziwei/dist/index.js"
+    }
+  }
 </script>
 <pre id="result">Running…</pre>
 <script type="module">
-  import * as E from "js-ephemeris";
+  import * as Core from "js-ephemeris";
+  import * as Bazi from "js-bazi";
+  import * as Ziwei from "js-ziwei";
+  const E = { ...Core, ...Bazi, ...Ziwei };
   import { exercisePackage } from "./scenario.mjs";
   try {
     const browser = await exercisePackage(E);

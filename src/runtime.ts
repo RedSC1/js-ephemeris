@@ -1,4 +1,8 @@
 import {
+  registerContextExtensionHost,
+  registerRuntimeExtensionHost,
+} from "./internal/extension-access.js";
+import {
   loadModule,
   Wire,
   diagnostic,
@@ -27,9 +31,6 @@ import {
   type ChineseCalendarConfiguration,
 } from "./calendar.js";
 import { EclipseApi } from "./eclipse.js";
-import { BaziContext, createBazi, type BaziConfiguration } from "./bazi.js";
-import { ZiweiContext, createZiwei, type ZiweiConfiguration } from "./ziwei.js";
-import { createShenShaCatalog, type BaziShenShaCatalog } from "./shen-sha.js";
 import {
   EventsApi,
   VisibilityApi,
@@ -52,11 +53,6 @@ import {
 import { decode, decodeText, width } from "./internal/records.js";
 import { assertAstronomyProtocol } from "./internal/astronomy-transport.js";
 import type { RuntimeRegisteredDataSource } from "./internal/astronomy-records.generated.js";
-import {
-  createZiweiDataCatalog,
-  type ZiweiDataCatalog,
-  type ZiweiCatalogOptions,
-} from "./ziwei-catalog.js";
 
 export interface InitializationOptions extends WasmInitializationOptions {
   loadBuiltinEop?: boolean;
@@ -96,9 +92,6 @@ export class Ephemeris {
       forget: (value) => this.#resources.delete(value),
     };
   }
-  createBaziShenShaCatalog(): BaziShenShaCatalog {
-    return createShenShaCatalog(this.resourceHost());
-  }
   private setupHost(): RuntimeResourceHost {
     return {
       ...this.resourceHost(),
@@ -124,11 +117,9 @@ export class Ephemeris {
   ): CustomModelRegistration {
     return registerCustomModel(this.setupHost(), 2, model);
   }
-  createZiweiDataCatalog(options: ZiweiCatalogOptions = {}): ZiweiDataCatalog {
-    return createZiweiDataCatalog(this.resourceHost(), options);
-  }
   readonly sources: SourceManagementApi;
   private constructor(private readonly wire: Wire) {
+    registerRuntimeExtensionHost(this, this.resourceHost());
     this.sources = new SourceManagementApi({
       wire,
       handle: 0,
@@ -514,6 +505,19 @@ export class EphemerisContext {
     this.stars = new StarsApi(this.host);
     this.observed = new ObservedApi(this.host);
     this.configuration = new ContextConfiguration(configurationHost, this.time);
+    registerContextExtensionHost(this, {
+      host: this.host,
+      time: this.time,
+      calendar: () => this.chineseCalendar,
+      createChild: <T extends { close(): void }>(
+        factory: (onClose: () => void) => T,
+      ): T =>
+        this.run(() => {
+          const child = factory(() => this.#children.delete(child));
+          this.#children.add(child);
+          return child;
+        }),
+    });
   }
   /** @internal Initialization performed by Ephemeris. */
   initialize(options: ContextOptions): void {
@@ -574,42 +578,6 @@ export class EphemerisContext {
   }
   clone(): EphemerisContext {
     return this.run(() => this.cloneContext());
-  }
-  bazi({
-    chineseCalendar = this.chineseCalendar,
-    ...config
-  }: BaziConfiguration & {
-    chineseCalendar?: ChineseCalendar;
-  } = {}): BaziContext {
-    return this.run(() => {
-      const value: BaziContext = createBazi(
-        this.host,
-        this.time,
-        chineseCalendar,
-        config,
-        () => this.#children.delete(value),
-      );
-      this.#children.add(value);
-      return value;
-    });
-  }
-  ziwei({
-    chineseCalendar = this.chineseCalendar,
-    ...config
-  }: ZiweiConfiguration & {
-    chineseCalendar?: ChineseCalendar;
-  } = {}): ZiweiContext {
-    return this.run(() => {
-      const value: ZiweiContext = createZiwei(
-        this.host,
-        this.time,
-        chineseCalendar,
-        config,
-        () => this.#children.delete(value),
-      );
-      this.#children.add(value);
-      return value;
-    });
   }
   close(): void {
     if (this.#closed) return;

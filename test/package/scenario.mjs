@@ -23,13 +23,17 @@ export async function exercisePackage(E, initializationOptions = {}) {
       "lunar date",
     );
     const local = new E.AstroDateTime(2003, 3, 13, 14, 15);
-    const bazi = ctx
-      .bazi()
-      .calculateLocal(local, { gender: E.BaziGender.male }).value;
-    const chart = ctx
-      .ziwei()
-      .createChartLocal(local, { gender: E.ZiweiGender.male }).value;
-    check(chart.summary.anchors.length === 31, "embedded Ziwei rules");
+    // Unbundled Workers have no import-map support. They exercise core only;
+    // Vite Workers and Node Workers additionally exercise both optional packages.
+    const bazi = E.BaziGender
+      ? ctx.bazi().calculateLocal(local, { gender: E.BaziGender.male }).value
+      : null;
+    const chart = E.ZiweiGender
+      ? ctx.ziwei().createChartLocal(local, { gender: E.ZiweiGender.male })
+          .value
+      : null;
+    if (chart)
+      check(chart.summary.anchors.length === 31, "embedded Ziwei rules");
     const eclipse = ctx.eclipses.nextSolarAtUt1(ut1).value;
     check(
       eclipse.kind !== 0 && eclipse.maximumJulianDateUt1 !== null,
@@ -40,8 +44,8 @@ export async function exercisePackage(E, initializationOptions = {}) {
       position: [...position.value.values],
       positionFlags: position.flags.mask,
       lunar: [lunar.year, lunar.month, lunar.day, +lunar.isLeap],
-      pillars: Object.values(bazi.pillars),
-      anchors: [...chart.summary.anchors],
+      pillars: bazi ? Object.values(bazi.pillars) : null,
+      anchors: chart ? [...chart.summary.anchors] : null,
       eclipseKind: eclipse.kind,
       eclipseMaximum: eclipse.maximumJulianDateUt1.toDouble(),
     };

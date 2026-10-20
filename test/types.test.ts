@@ -1,3 +1,5 @@
+import { ZiweiGender, ZiweiRuleset } from "js-ziwei";
+import { BaziGender, BaziClockMode } from "js-bazi";
 // Compile-only public TypeScript consumer. No runtime import of internal transport.
 import {
   Ephemeris,
@@ -8,12 +10,8 @@ import {
   AstroDateTime,
   EclipseOption,
   ChineseCalendarConfig,
-  ZiweiGender,
-  BaziGender,
-  BaziClockMode,
-  ZiweiRuleset,
   UtcJulianDate,
-} from "../dist/index.js";
+} from "js-ephemeris";
 const eph = await Ephemeris.initialize();
 const ctx = eph.createContext({
   chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),

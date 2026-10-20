@@ -1,0 +1,65 @@
+{
+  "name": "js-ephemeris",
+  "version": "1.1.0",
+  "private": true,
+  "description": "JavaScript/TypeScript astronomy and Chinese calendar library powered by Taiyin C++/WebAssembly for browsers, Workers and Node.js.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "author": "RedSC1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RedSC1/js-ephemeris.git"
+  },
+  "homepage": "https://github.com/RedSC1/js-ephemeris#readme",
+  "bugs": {
+    "url": "https://github.com/RedSC1/js-ephemeris/issues"
+  },
+  "keywords": [
+    "ephemeris",
+    "astronomy",
+    "wasm",
+    "typescript",
+    "chinese-calendar"
+  ],
+  "exports": {
+    "./assets/taiyin_web.mjs": "./assets/taiyin_web.mjs",
+    "./assets/taiyin_web.wasm": "./assets/taiyin_web.wasm",
+    "./assets/build-info.json": "./assets/build-info.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./extension-host": {
+      "types": "./dist/extension-host.d.ts",
+      "import": "./dist/extension-host.js"
+    }
+  },
+  "files": [
+    "dist",
+    "assets/taiyin_web.mjs",
+    "assets/taiyin_web.wasm",
+    "assets/build-info.json",
+    "assets/package.json",
+    "assets/README.md",
+    "assets/licenses/EMSCRIPTEN-LICENSE.txt",
+    "assets/licenses/EMSCRIPTEN-AUTHORS.txt",
+    "assets/licenses/MUSL-COPYRIGHT.txt",
+    "assets/licenses/LIBCXX-LICENSE.txt",
+    "assets/licenses/LIBCXXABI-LICENSE.txt",
+    "assets/licenses/COMPILER-RT-LICENSE.txt",
+    "docs",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "CORE-NOTICE",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "scripts": {
+    "prepack": "node ../../scripts/prepack.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

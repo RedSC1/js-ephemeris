@@ -6,28 +6,28 @@ import {
   dateValues,
   jdValues,
   sameScale,
-} from "./date.js";
+} from "js-ephemeris/extension-host";
 import {
   ChineseCalendar,
   RatHourMode,
   type FourPillars,
   type SolarDate,
   type LunarDate,
-} from "./calendar.js";
-import { ClosedContextError } from "./errors.js";
+} from "js-ephemeris/extension-host";
+import { ClosedContextError } from "js-ephemeris/extension-host";
 import {
   result,
   ResultFlags,
   integer,
   finite,
   type OperationResult,
-} from "./models.js";
-import { withCalendar, retainCalendar } from "./internal/calendar-access.js";
-import { decode, encode, decodeText, width } from "./internal/records.js";
-import type * as R from "./internal/records.generated.js";
-import type { ContextHost } from "./internal/wasm.js";
-import type { Time } from "./time.js";
-import { SolarTime } from "./solar-time.js";
+} from "js-ephemeris/extension-host";
+import { withCalendar, retainCalendar } from "js-ephemeris/extension-host";
+import { decode, encode, decodeText, width } from "js-ephemeris/extension-host";
+import type * as R from "js-ephemeris/extension-host";
+import type { ContextHost } from "js-ephemeris/extension-host";
+import type { Time } from "js-ephemeris/extension-host";
+import { SolarTime } from "js-ephemeris/extension-host";
 export enum BaziGender {
   female = 0,
   male = 1,

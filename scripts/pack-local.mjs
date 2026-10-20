@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { root, run, npm } from "./package-utils.mjs";
+import { root, run, npm, packageNames } from "./package-utils.mjs";
 
 run(process.execPath, [
   resolve(root, "scripts/build-package.mjs"),
@@ -8,4 +8,5 @@ run(process.execPath, [
 ]);
 const destination = resolve(root, "build/packages");
 mkdirSync(destination, { recursive: true });
-npm(["pack", "--pack-destination", destination]);
+for (const name of packageNames)
+  npm(["pack", "--workspace", name, "--pack-destination", destination]);

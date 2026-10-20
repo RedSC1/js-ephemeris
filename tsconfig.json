@@ -12,7 +12,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "dist",
+    "outDir": "packages/js-ephemeris/dist",
     "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true

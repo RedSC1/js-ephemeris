@@ -32,6 +32,29 @@ Until then, install the locally built package with
 release has a different API. Consumers do not need a C++ compiler or Emscripten.
 Node.js 22+ and modern ESM/WebAssembly-capable browsers are the intended targets.
 
+## Three independent npm packages
+
+| Package        | Scope                                                                |
+| -------------- | -------------------------------------------------------------------- |
+| `js-ephemeris` | Positions, eclipses, time scales, Chinese calendars and four pillars |
+| `js-bazi`      | BaZi, Qi-Yun, Da-Yun, reverse lookup and Shen Sha                    |
+| `js-ziwei`     | Ziwei charts, flows, reverse lookup and custom rules                 |
+
+Astronomy and calendar applications need only the core. Install and import the optional packages when needed:
+
+```sh
+npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
+```
+
+Importing `js-bazi` adds `ctx.bazi()` and `eph.createBaziShenShaCatalog()`;
+importing `js-ziwei` adds `ctx.ziwei()` and `eph.createZiweiDataCatalog()`.
+Each extension has a core peer dependency and reuses the same runtime, context and Wasm instance.
+No second Wasm is shipped or instantiated. Default Ziwei tables remain embedded in the shared Wasm.
+Each factory call still creates an independent extension context, not an implicit singleton.
+If you only need extension types, also use `import "js-bazi"` or `import "js-ziwei"`
+to enable its runtime methods; TypeScript-only imports are erased.
+The packages share one repository but are published separately. These installation commands apply after publication; all three remain unpublished.
+
 ## Build locally
 
 Install Node.js 22+ and activate Emscripten **6.0.12**. Build an installable
@@ -43,7 +66,7 @@ npm run pack:local
 npm run test:package
 ```
 
-The build supports `web,worker,node`. The `.tgz` is written under `build/packages/`;
+The build supports `web,worker,node`. The three `.tgz` files are written under `build/packages/`;
 generated binaries and build directories are ignored, not committed. No npm
 publication occurs. See [packaging and installation tests](docs/packaging.md)
 for offline archives, browser setup, deployment and verification scope.
@@ -95,12 +118,9 @@ The loader URL is **executable code** and must be trusted. It is not a data URL.
 `Date` input represents a UTC **instant**; local civil input uses `AstroDateTime` plus the selected calendar's fixed offset. Creating a typed Julian date labels coordinates; it never silently converts time scales.
 
 ```js
-import {
-  AstroDateTime,
-  ChineseCalendarConfig,
-  BaziGender,
-  ZiweiGender,
-} from "js-ephemeris";
+import { AstroDateTime, ChineseCalendarConfig } from "js-ephemeris";
+import { BaziGender } from "js-bazi";
+import { ZiweiGender } from "js-ziwei";
 
 const ctx = eph.createContext({
   chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),

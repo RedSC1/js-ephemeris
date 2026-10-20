@@ -20,7 +20,7 @@ import {
 } from "./package-build-inputs.mjs";
 
 const pin = json(resolve(root, "wasm-build.json"));
-const pkg = json(resolve(root, "package.json"));
+const pkg = json(resolve(root, "packages/js-ephemeris/package.json"));
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 2 || args[0] !== "--core-archive"))
   throw new Error(

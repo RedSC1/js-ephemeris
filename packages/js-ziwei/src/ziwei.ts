@@ -6,32 +6,36 @@ import {
   jdValues,
   dateValues,
   sameScale,
-} from "./date.js";
-import { ChineseCalendar, type SolarDate, type LunarDate } from "./calendar.js";
+} from "js-ephemeris/extension-host";
+import {
+  ChineseCalendar,
+  type SolarDate,
+  type LunarDate,
+} from "js-ephemeris/extension-host";
 import {
   withZiweiCatalog,
   type ZiweiDataCatalog,
   type ZiweiRuleset,
 } from "./ziwei-catalog.js";
-import { ClosedContextError } from "./errors.js";
+import { ClosedContextError } from "js-ephemeris/extension-host";
 import {
   result,
   ResultFlags,
   integer,
   finite,
   type OperationResult,
-} from "./models.js";
-import { withCalendar, retainCalendar } from "./internal/calendar-access.js";
+} from "js-ephemeris/extension-host";
+import { withCalendar, retainCalendar } from "js-ephemeris/extension-host";
 import {
   decode,
   encode,
   encodeText,
   decodeText,
   width,
-} from "./internal/records.js";
-import type * as R from "./internal/records.generated.js";
-import type { ContextHost } from "./internal/wasm.js";
-import type { Time } from "./time.js";
+} from "js-ephemeris/extension-host";
+import type * as R from "js-ephemeris/extension-host";
+import type { ContextHost } from "js-ephemeris/extension-host";
+import type { Time } from "js-ephemeris/extension-host";
 
 export enum ZiweiGender {
   male = 0,

@@ -14,7 +14,7 @@ import {
   PositionFlag,
   ObservedOption,
   VisibilityEventKind,
-} from "../dist/index.js";
+} from "js-ephemeris";
 
 const eph = await Ephemeris.initialize();
 const ctx = eph.createContext();
@@ -82,7 +82,7 @@ Use typed TT/UT1 coordinates consistently. `options` accepts high-bit `EventOpti
 ## Houses, sidereal coordinates and lunar points
 
 ```js
-import { HouseSystem, Ayanamsha } from "../dist/index.js";
+import { HouseSystem, Ayanamsha } from "js-ephemeris";
 const houses = ctx.astrology.housesAtUt1(start, {
   houseSystemId: HouseSystem.placidus,
 });

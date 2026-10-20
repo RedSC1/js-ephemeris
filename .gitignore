@@ -13,3 +13,13 @@ private/
 .env.*
 .npmrc
 *.tgz
+
+packages/*/dist/
+packages/js-ephemeris/assets/
+packages/js-ephemeris/docs/
+packages/*/LICENSE
+packages/*/NOTICE
+packages/js-ephemeris/CORE-NOTICE
+packages/js-ephemeris/THIRD_PARTY_NOTICES.txt
+packages/js-ephemeris/README*.md
+packages/js-ephemeris/CHANGELOG.md

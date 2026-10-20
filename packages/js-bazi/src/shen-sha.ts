@@ -1,14 +1,14 @@
-import { ClosedContextError } from "./errors.js";
+import { ClosedContextError } from "js-ephemeris/extension-host";
 import {
   integer,
   result,
   ResultFlags,
   text,
   type OperationResult,
-} from "./models.js";
-import { encode, encodeText, decodeText } from "./internal/records.js";
-import type { RuntimeResourceHost, Wire } from "./internal/wasm.js";
-import type { BaziChart } from "./internal/records.generated.js";
+} from "js-ephemeris/extension-host";
+import { encode, encodeText, decodeText } from "js-ephemeris/extension-host";
+import type { RuntimeResourceHost, Wire } from "js-ephemeris/extension-host";
+import type { BaziChart } from "js-ephemeris/extension-host";
 import type { BaziGender } from "./bazi.js";
 
 export enum BaziShenShaTargetKind {
