@@ -312,7 +312,7 @@ test("SDK notices are recreated without stale or accidentally copied files", (t)
 
 test("npm files whitelist excludes unexpected SDK-directory entries even without rebuilding", (t) => {
   const f = fixture(t);
-  const pkg = json(resolve(root, "package.json"));
+  const pkg = json(resolve(root, "packages/js-ephemeris/package.json"));
   f.write(
     "package.json",
     JSON.stringify({ name: pkg.name, version: pkg.version, files: pkg.files }),

@@ -37,7 +37,7 @@ Playwright 仅供开发测试，安装后的库没有这项运行时依赖。
 npm run pack:local -- --core-archive /path/to/taiyin-v1.1.0.tar.gz
 ```
 
-生成的安装包在 `build/packages/js-ephemeris-<version>.tgz`。包内包含 JS、类型声明、
+生成三个安装包：`build/packages/js-ephemeris-<version>.tgz`、`js-bazi-<version>.tgz`、`js-ziwei-<version>.tgz`。包内包含 JS、类型声明、
 ESM loader、Wasm、公开文档和内核／第三方／Emscripten 运行时声明；不包含 DE 数据、
 恒星表、原生 DLL、源码仓库或开发依赖。
 
@@ -110,3 +110,10 @@ const eph = await Ephemeris.initialize({
 使用顶层 await 时设 `build.target: "es2022"`，模块 Worker 设 `worker.format: "es"`。
 安装测试覆盖开发服务器和生产构建预览，并在 `/release-smoke/` 非根路径下测试主线程
 及模块 Worker。这里没有承诺 SSR 支持，也不会自动猜测任意打包后 loader 的新位置。
+
+## 三包安装验证
+
+`--archive` 指向核心包时，同目录必须同时存在同版本 `js-bazi` 和 `js-ziwei` 安装包。
+测试不会重新打包 CI 候选产物：原字节分别离线安装，先验证核心可独立使用，再验证每个扩展及组合使用。
+两个扩展只有核心 peer dependency，不含 Wasm／loader 或核心实现。
+浏览器主线程用 import map，未打包 Worker 只测试核心；Node Worker 和 Vite Worker 验证三个包。

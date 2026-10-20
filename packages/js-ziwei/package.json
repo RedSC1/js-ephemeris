@@ -1,0 +1,40 @@
+{
+  "name": "js-ziwei",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MPL-2.0",
+  "description": "Optional Ziwei Dou Shu extension for js-ephemeris.",
+  "author": "RedSC1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RedSC1/js-ephemeris.git"
+  },
+  "homepage": "https://github.com/RedSC1/js-ephemeris#readme",
+  "bugs": {
+    "url": "https://github.com/RedSC1/js-ephemeris/issues"
+  },
+  "sideEffects": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "js-ephemeris": "1.1.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "prepack": "node ../../scripts/prepack.mjs"
+  }
+}

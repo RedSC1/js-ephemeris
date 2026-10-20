@@ -44,7 +44,7 @@ To use an already downloaded archive, with the same checksum validation:
 npm run pack:local -- --core-archive /path/to/taiyin-v1.1.0.tar.gz
 ```
 
-The output is `build/packages/js-ephemeris-<version>.tgz`. It contains the JS
+The output is three archives under `build/packages/`: `js-ephemeris-<version>.tgz`, `js-bazi-<version>.tgz` and `js-ziwei-<version>.tgz`. It contains the JS
 facade, declarations, ESM loader, Wasm, public documentation, core/third-party
 notices and Emscripten/runtime license files. It does not contain DE datasets,
 star catalogs, native DLLs, source checkouts or development dependencies.
@@ -157,3 +157,12 @@ in the main page and a module Worker with both Vite's development server and
 its built production preview under `/release-smoke/`, not only the origin root.
 This is client-side deployment coverage; it does not claim SSR integration or
 automatic asset discovery after arbitrary bundling.
+
+## Split-package installation checks
+
+When `--archive` names the core archive, the same directory must contain the matching
+`js-bazi` and `js-ziwei` archives. CI candidates are installed from their original bytes,
+never repacked. Tests first use core alone, then each extension independently and all three together.
+Extensions have only a core peer dependency and contain no Wasm, loader or duplicate core implementation.
+Browser main-thread tests use an import map; unbundled Workers test core only.
+Node Workers and Vite Workers exercise all three packages.

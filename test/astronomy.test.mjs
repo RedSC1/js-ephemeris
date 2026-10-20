@@ -5,12 +5,15 @@ import { fileURLToPath } from "node:url";
 import { readFile, mkdtemp, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Ephemeris } from "../dist/index.js";
-import { Wire, loadModule } from "../dist/internal/wasm.js";
+import { Ephemeris } from "./all-packages.mjs";
+import {
+  Wire,
+  loadModule,
+} from "../packages/js-ephemeris/dist/internal/wasm.js";
 import { runAstronomyScenarios, starText } from "./astronomy-scenarios.mjs";
 import { runCustomModelScenarios } from "./custom-model-scenarios.mjs";
-import { astronomyOperations } from "../dist/internal/astronomy-operations.generated.js";
-import { astronomySchemas } from "../dist/internal/astronomy-records.generated.js";
+import { astronomyOperations } from "../packages/js-ephemeris/dist/internal/astronomy-operations.generated.js";
+import { astronomySchemas } from "../packages/js-ephemeris/dist/internal/astronomy-records.generated.js";
 const fields = (type, key = "") =>
   type === "taiyin_split_julian_date"
     ? [
@@ -236,7 +239,7 @@ test("custom registrations are isolated and closed by their runtime", async () =
   ]);
   const ca = a.createContext(),
     cb = b.createContext();
-  const { TtJulianDate } = await import("../dist/index.js");
+  const { TtJulianDate } = await import("./all-packages.mjs");
   const tt = TtJulianDate.fromDouble(2460310.5);
   const ra = a.registerCustomTarget({
     targetId: -920001,

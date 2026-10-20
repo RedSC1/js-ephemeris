@@ -17,7 +17,8 @@ for (const interval of matches.value) {
 }
 ```
 
-Imports: `AstroDateTime`, `BaziGender`, `BaziClockMode` from the package.
+Imports: `AstroDateTime` from `js-ephemeris`; `BaziGender` and `BaziClockMode`
+from the optional `js-bazi` package. Importing it enables `ctx.bazi()`.
 Pass `{ratHourMode, clock: {mode: BaziClockMode.apparentSolar,
 longitudeRadians}}` to choose a rat-hour school and a solar chart clock.
 Use the same clock/rat options that produced the requested pillars.

@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const root = fileURLToPath(new URL("../", import.meta.url));
+export const packageNames = ["js-ephemeris", "js-bazi", "js-ziwei"];
+export const corePackageRoot = fileURLToPath(
+  new URL("../packages/js-ephemeris/", import.meta.url),
+);
 export const json = (file) => JSON.parse(readFileSync(file, "utf8"));
 export const sha256 = (file) =>
   createHash("sha256").update(readFileSync(file)).digest("hex");

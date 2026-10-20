@@ -34,60 +34,28 @@ export * from "./position.js";
 export * from "./calendar.js";
 export * from "./solar-time.js";
 export * from "./eclipse.js";
-export type * from "./internal/records.generated.js";
-export { BaziContext, BaziGender, BaziClockMode } from "./bazi.js";
 export type {
-  BaziConfiguration,
-  BaziCalculation,
-  BaziClock,
-  BaziCalculateOptions,
-  BaziReverseOptions,
-  BaziCivilOptions,
-  BaziRelationResult,
-} from "./bazi.js";
-export {
-  BaziShenShaCatalog,
-  BaziShenShaContext,
-  BaziShenShaTargetKind,
-} from "./shen-sha.js";
-export type {
-  BaziShenShaRule,
-  BaziShenShaModule,
-  BaziShenShaInput,
-  BaziShenShaMatch,
-} from "./shen-sha.js";
-export { ZiweiDataCatalog, ZiweiRuleset } from "./ziwei-catalog.js";
-export type { ZiweiCatalogOptions } from "./ziwei-catalog.js";
-export {
-  ZiweiContext,
-  ZiweiChart,
-  ZiweiCastingChart,
-  ZiweiGender,
-  ZiweiClockMode,
-  ZiweiChartMode,
-  ZiweiFlowLevel,
-  ZiweiPillarBoundary,
-  ZiweiLeapMonthStrategy,
-  ZiweiFlowMonthPalaceStrategy,
-  ZiweiBureau,
-  ZiweiPalace,
-} from "./ziwei.js";
-export type {
-  ZiweiClock,
-  ZiweiOptionSelection,
-  ZiweiJsonRuleModule,
-  ZiweiConfiguration,
-  ZiweiStar,
-  ZiweiStarPosition,
-  ZiweiChartSummary,
-  ZiweiClockTarget,
-  ZiweiBirthConfiguration,
-  ZiweiFlowConfiguration,
-  ZiweiReverseUt1Candidate,
-  ZiweiUtcClockTarget,
-  ZiweiCalculateOptions,
-  ZiweiCivilOptions,
-} from "./ziwei.js";
+  LunarEclipseResultTt,
+  LunarEclipseResultUt1,
+  LocalLunarEclipseResultTt,
+  LocalLunarEclipseResultUt1,
+  SolarEclipseResultTt,
+  SolarEclipseResultUt1,
+  LocalSolarEclipseCircumstancesTt,
+  LocalSolarEclipseCircumstancesUt1,
+  LocalSolarEclipseResultTt,
+  LocalSolarEclipseResultUt1,
+  LocalSolarEclipseBoundary,
+  SolarEclipsePathPoint,
+  SolarEclipseRouteRow,
+  SolarEclipseWhere,
+  SolarEclipseRouteCurvePoint,
+  SolarEclipseRouteProductPoint,
+  SolarEclipseRouteProductSummary,
+  SolarBesselianElements,
+  SolarBesselianPolynomial,
+  GanzhiFourPillars,
+} from "./internal/records.generated.js";
 export type { WasmInitializationOptions } from "./internal/wasm.js";
 export * from "./astronomy-options.js";
 export * from "./astronomy.generated.js";

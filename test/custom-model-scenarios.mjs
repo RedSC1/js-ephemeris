@@ -1,4 +1,4 @@
-import * as E from "../dist/index.js";
+import * as E from "./all-packages.mjs";
 export function runCustomModelScenarios(eph) {
   let assertions = 0;
   const check = (v, m) => {

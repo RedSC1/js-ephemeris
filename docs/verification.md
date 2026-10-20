@@ -1,5 +1,30 @@
 # Verification record
 
+## Three-package split — local verification, 2026-10-20
+
+The optional JavaScript APIs now live in `js-bazi` and `js-ziwei`; `js-ephemeris`
+alone exports neither extension's classes nor its context factories.
+The four moved implementation files have unchanged calculation bodies.
+
+- Unit/packaging tests, public TypeScript checks, all existing Wasm/native fixtures,
+  all 39 eclipse operations, astronomy/custom callbacks and BaZi reverse lookup passed.
+- A new lifecycle test imports each extension after creating a core context and
+  verifies shared calendar guards, clone support and owner closure. A counted
+  Emscripten factory confirms exactly one Wasm instantiation.
+- Three actual tarballs were installed offline in a temporary consumer. Core-only,
+  each imported extension independently, combined calculations and installed
+  declarations passed. Archives were also retested without repacking, as in CI.
+- Node **22.23.3**, Chromium **155.0.8059.80** and WebKit **27.2** passed the
+  installed-package scenarios. Vite **8.3.4** dev/production and its bundled
+  module Worker passed with all three packages. Node Workers use all three;
+  unbundled browser Workers use core only because Worker realms lack import maps.
+- Firefox and actual Safari were not rerun for this split; the local browser
+  limitations described below still apply. Fresh remote CI awaits a future push.
+
+The extensions ship no loader or Wasm binary. The unchanged core Wasm still
+contains the C++ extension algorithms and default Ziwei tables. All package
+manifests remain private; no npm publication was performed.
+
 ## 1.1.0 release preparation — 2026-10-20
 
 The current package is built from public core **v1.1.0**, immutable revision

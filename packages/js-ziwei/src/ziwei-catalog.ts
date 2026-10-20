@@ -1,11 +1,11 @@
-import { ClosedContextError } from "./errors.js";
-import { integer, text } from "./models.js";
-import { encodeText } from "./internal/records.js";
+import { ClosedContextError } from "js-ephemeris/extension-host";
+import { integer, text } from "js-ephemeris/extension-host";
+import { encodeText } from "js-ephemeris/extension-host";
 import type {
   RuntimeResourceHost,
   ContextHost,
   Wire,
-} from "./internal/wasm.js";
+} from "js-ephemeris/extension-host";
 import type { ZiweiJsonRuleModule } from "./ziwei.js";
 
 /** Immutable caller-defined option modules; built-in tables are never edited. */

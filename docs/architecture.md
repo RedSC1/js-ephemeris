@@ -1,5 +1,17 @@
 # Binding boundary
 
+The npm workspace contains three distributable packages. `js-ephemeris` owns the
+runtime, Wasm, time and calendar services. It has no JavaScript dependency on
+`js-bazi` or `js-ziwei`; each optional package declares a matching core peer
+dependency and augments the existing context only when imported.
+
+The core's `extension-host` subpath shares lifecycle/transport capabilities and
+calendar identity checks with the official extensions. It does not instantiate
+another runtime. Each child remains registered with its owning core context,
+so closure and cross-context calendar guards continue to work across packages.
+All three packages use the same Wasm binary, including its embedded default Ziwei
+tables; this split changes JavaScript API/package ownership, not the C++ binary.
+
 ```text
 JS / TypeScript facade
   → internal record/ownership adapter

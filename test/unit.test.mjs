@@ -15,11 +15,16 @@ import {
   PositionApi,
   ObservedApi,
   StarsApi,
-} from "../dist/index.js";
-import { positionMask } from "../dist/models.js";
-import { uint64, encode, decode, width } from "../dist/internal/records.js";
-import { Wire } from "../dist/internal/wasm.js";
-import { astronomyProtocolId } from "../dist/internal/astronomy-operations.generated.js";
+} from "./all-packages.mjs";
+import { positionMask } from "../packages/js-ephemeris/dist/models.js";
+import {
+  uint64,
+  encode,
+  decode,
+  width,
+} from "../packages/js-ephemeris/dist/internal/records.js";
+import { Wire } from "../packages/js-ephemeris/dist/internal/wasm.js";
+import { astronomyProtocolId } from "../packages/js-ephemeris/dist/internal/astronomy-operations.generated.js";
 
 test("split dates normalize fractions without collapsing to a double", () => {
   const jd = UtcJulianDate.fromParts(2460000, 1.25);

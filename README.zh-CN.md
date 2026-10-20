@@ -27,6 +27,28 @@ npm install js-ephemeris@1.1.0
 npm 上现有的 0.0.x 是不同 API，不能直接照搬本文用法。
 使用者不需要安装 C++ 编译器或 Emscripten。目标环境为 Node.js 22+ 和支持现代 ESM／WebAssembly 的浏览器。
 
+## 三个独立 npm 包
+
+| 包             | 功能                                       |
+| -------------- | ------------------------------------------ |
+| `js-ephemeris` | 星体位置、日月食、时间转换、农历和四柱干支 |
+| `js-bazi`      | 八字、起运、大运、反查和神煞扩展           |
+| `js-ziwei`     | 紫微排盘、流运、反查与自定义规则           |
+
+只算天文或农历无需安装另外两个包。需要扩展时，安装并导入对应包：
+
+```sh
+npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
+```
+
+`js-bazi` 导入后才提供 `ctx.bazi()` 和 `eph.createBaziShenShaCatalog()`；
+`js-ziwei` 导入后才提供 `ctx.ziwei()` 和 `eph.createZiweiDataCatalog()`。
+扩展通过 peer dependency 复用同一个核心包、context 和 Wasm，不会再创建或附带第二份 Wasm。
+默认紫微规则表仍嵌在共享 Wasm 中。每次工厂调用仍创建独立扩展 context，不改为隐式单例。
+如果只导入扩展的 TypeScript 类型，还需要 `import "js-bazi"` 或 `import "js-ziwei"`
+启用运行时方法；`import type` 会被编译器删除。
+单仓库维护，三个包分别发布；此处的安装命令用于正式发布后，目前仍未发布。
+
 ## 本地构建
 
 准备 Node.js 22+，并激活 **Emscripten 6.0.12**。以下命令从已锁定、经过 SHA-256
@@ -83,12 +105,9 @@ EOP、月缘、恒星表另有专用加载方法，见 [数据加载](docs/data-
 ## 农历、八字与紫微
 
 ```js
-import {
-  AstroDateTime,
-  ChineseCalendarConfig,
-  BaziGender,
-  ZiweiGender,
-} from "js-ephemeris";
+import { AstroDateTime, ChineseCalendarConfig } from "js-ephemeris";
+import { BaziGender } from "js-bazi";
+import { ZiweiGender } from "js-ziwei";
 
 const ctx = eph.createContext({
   chineseCalendarConfig: ChineseCalendarConfig.localAstronomicalUtcOffset(420),

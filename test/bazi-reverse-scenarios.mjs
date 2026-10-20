@@ -1,5 +1,5 @@
 // Shared unchanged by Node and the browser; uses only public facade calls.
-import * as E from "../dist/index.js";
+import * as E from "./all-packages.mjs";
 export function runBaziReverseScenarios(eph) {
   let assertions = 0;
   const check = (v, text) => {

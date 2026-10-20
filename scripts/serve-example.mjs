@@ -12,7 +12,11 @@ const allowed = [
   "/test/custom-model-scenarios.mjs",
   "/test/bazi-reverse-scenarios.mjs",
   "/test/fixtures/native-reference.json",
-  "/dist/",
+  "/packages/js-ephemeris/dist/",
+  "/packages/js-ephemeris/assets/",
+  "/packages/js-bazi/dist/",
+  "/packages/js-ziwei/dist/",
+  "/test/all-packages.mjs",
   "/assets/",
 ];
 const types = {

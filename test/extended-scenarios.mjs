@@ -1,5 +1,5 @@
 // Public calls only; shared unchanged between Node and the browser.
-import * as E from "../dist/index.js";
+import * as E from "./all-packages.mjs";
 export function runExtendedScenarios(eph, { reference } = {}) {
   let assertions = 0,
     nativeRows = 0,

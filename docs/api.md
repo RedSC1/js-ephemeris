@@ -4,6 +4,21 @@ This is the initial binding, not a promise of full Python/Dart parity. The gener
 
 ## Runtime and contexts
 
+The core package is `js-ephemeris`. Install/import `js-bazi` for BaZi and Shen Sha,
+or `js-ziwei` for Ziwei. These optional packages add methods to the same context;
+they do not create another runtime or ship another Wasm.
+
+```js
+import { Ephemeris, AstroDateTime } from "js-ephemeris";
+import { BaziGender, BaziClockMode, BaziShenShaTargetKind } from "js-bazi";
+import {
+  ZiweiGender,
+  ZiweiClockMode,
+  ZiweiFlowLevel,
+  ZiweiRuleset,
+} from "js-ziwei";
+```
+
 ```js
 const eph = await Ephemeris.initialize({ loadBuiltinEop: true });
 const ctx = eph.createContext();

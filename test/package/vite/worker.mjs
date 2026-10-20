@@ -1,4 +1,7 @@
-import * as E from "js-ephemeris";
+import * as Core from "js-ephemeris";
+import * as Bazi from "js-bazi";
+import * as Ziwei from "js-ziwei";
+const E = { ...Core, ...Bazi, ...Ziwei };
 import { exercisePackage } from "./scenario.mjs";
 
 try {

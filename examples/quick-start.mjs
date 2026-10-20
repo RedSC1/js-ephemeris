@@ -5,7 +5,7 @@ import {
   AstroDateTime,
   BaziGender,
   ZiweiGender,
-} from "../dist/index.js";
+} from "../test/all-packages.mjs";
 const eph = await Ephemeris.initialize();
 const ctx = eph.createContext();
 try {

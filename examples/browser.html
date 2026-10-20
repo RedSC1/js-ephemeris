@@ -28,8 +28,18 @@
     <h1>Ephemeris JS/TS · shared C++ Wasm</h1>
     <p>Local development check. No data is uploaded.</p>
     <pre id="result">Initializing…</pre>
+    <script type="importmap">
+      {
+        "imports": {
+          "js-ephemeris": "/packages/js-ephemeris/dist/index.js",
+          "js-ephemeris/extension-host": "/packages/js-ephemeris/dist/extension-host.js",
+          "js-bazi": "/packages/js-bazi/dist/index.js",
+          "js-ziwei": "/packages/js-ziwei/dist/index.js"
+        }
+      }
+    </script>
     <script type="module">
-      import { Ephemeris } from "../dist/index.js";
+      import { Ephemeris } from "js-ephemeris";
       import { runScenarios, exerciseEclipses } from "../test/scenarios.mjs";
       import { runExtendedScenarios } from "../test/extended-scenarios.mjs";
       import { runAstronomyScenarios } from "../test/astronomy-scenarios.mjs";

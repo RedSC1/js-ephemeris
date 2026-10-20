@@ -1,5 +1,5 @@
 // Runs unchanged in Node and a real browser. No FFI or mocked astronomy.
-import * as E from "../dist/index.js";
+import * as E from "./all-packages.mjs";
 export async function runScenarios(eph, { reference, sourceBytes } = {}) {
   let assertions = 0,
     nativeRows = 0,

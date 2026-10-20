@@ -22,7 +22,14 @@ export const requiredPackageInputs = [
   ...Object.keys(sdkNotices).map((name) => `assets/licenses/${name}`),
 ];
 export function verifyPackageInputs(directory = root) {
-  const pkg = json(resolve(directory, "package.json"));
+  const pkg = json(
+    resolve(
+      directory,
+      directory === root
+        ? "packages/js-ephemeris/package.json"
+        : "package.json",
+    ),
+  );
   const pin = json(resolve(directory, "wasm-build.json"));
   validateCorePin(pin.core);
   const manifest = resolve(directory, "assets/build-info.json");
