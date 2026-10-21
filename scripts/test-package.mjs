@@ -37,6 +37,7 @@ import {
   verifyPackageInputs,
   verifyInstalledPackageInputs,
 } from "./verify-package.mjs";
+import { checkReadmeLinks, trackedRepositoryFiles } from "./readme-links.mjs";
 
 const args = process.argv.slice(2);
 const reportPath = resolve(root, "build/package-test-result.json");
@@ -102,6 +103,7 @@ async function checkPage(
 }
 
 const expectedBuild = verifyPackageInputs();
+const trackedFiles = trackedRepositoryFiles(root);
 const destination = resolve(root, "build/packages");
 mkdirSync(destination, { recursive: true });
 
@@ -264,12 +266,20 @@ try {
         !contents.includes(Buffer.from(root.replace(/\/$/, ""))),
         `Build-machine path leaked in ${file}`,
       );
-      if (file === "README.md" || file === "README.zh-CN.md")
+      if (file === "README.md" || file === "README.zh-CN.md") {
         assert.doesNotMatch(
           contents.toString("utf8"),
           /npm publication(?: is)? pending|prepared for npm publication|Until it appears on npm|Before publication|npm 发布尚待执行|发布前可/iu,
           `Stale pre-publication wording in ${candidate.name}/${file}`,
         );
+        assert.ok(
+          checkReadmeLinks(
+            contents.toString("utf8"),
+            trackedFiles,
+            `${candidate.name}/${file}`,
+          ).length > 0,
+        );
+      }
     }
   const smoke = resolve(app, "smoke");
   mkdirSync(smoke);

@@ -1,6 +1,6 @@
 {
   "name": "js-ephemeris",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "JavaScript/TypeScript astronomy and Chinese calendar library powered by Taiyin C++/WebAssembly for browsers, Workers and Node.js.",
   "type": "module",
   "license": "MPL-2.0",

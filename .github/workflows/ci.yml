@@ -62,6 +62,8 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Check README links against tracked files and GitHub
+        run: npm run test:links -- --online
       - id: package-version
         name: Read package version
         shell: bash

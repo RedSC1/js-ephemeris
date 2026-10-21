@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 — 2026-10-21
+
+- Use absolute GitHub links in both languages of all three package READMEs, fixing npm links to root documentation, translations, changelogs and license notices.
+- Add offline tracked-file checks, online HTTP link checks and installed-package README link validation.
+- Synchronize package versions and core peer dependencies at 1.1.2. No calculation or API changes; the C++ core remains at v1.1.0.
+
 ## 1.1.1 — 2026-10-21
 
 - Correct the English and Chinese npm READMEs: remove stale pre-publication wording and update installation examples.

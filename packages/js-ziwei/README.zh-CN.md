@@ -1,20 +1,20 @@
 # js-ziwei
 
-[English](README.md)
+[English](https://github.com/RedSC1/js-ephemeris/blob/main/packages/js-ziwei/README.md)
 
 紫微斗数扩展，复用 [js-ephemeris](https://github.com/RedSC1/js-ephemeris) 的
-C++／WebAssembly 内核。需要匹配的 `js-ephemeris@1.1.1` 核心包。
+C++／WebAssembly 内核。需要匹配的 `js-ephemeris@1.1.2` 核心包。
 
 从 npm 安装核心与扩展：
 
 ```sh
-npm install js-ephemeris@1.1.1 js-ziwei@1.1.1
+npm install js-ephemeris@1.1.2 js-ziwei@1.1.2
 ```
 
 如需安装本地构建产物，将路径替换为实际位置：
 
 ```sh
-npm install /path/to/js-ephemeris-1.1.1.tgz /path/to/js-ziwei-1.1.1.tgz
+npm install /path/to/js-ephemeris-1.1.2.tgz /path/to/js-ziwei-1.1.2.tgz
 ```
 
 ## 快速开始
@@ -57,5 +57,5 @@ eph.close();
 
 ## 许可
 
-原创绑定代码采用 MPL-2.0；内核和第三方组件保留各自的许可与感谢声明，见 [NOTICE](NOTICE)。
-版本说明见 [CHANGELOG](CHANGELOG.md)。
+原创绑定代码采用 MPL-2.0；内核和第三方组件保留各自的许可与感谢声明，见 [NOTICE](https://github.com/RedSC1/js-ephemeris/blob/main/NOTICE)。
+版本说明见 [CHANGELOG](https://github.com/RedSC1/js-ephemeris/blob/main/packages/js-ziwei/CHANGELOG.md)。

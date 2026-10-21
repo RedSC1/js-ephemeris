@@ -1,6 +1,6 @@
 # js-ephemeris — JavaScript / TypeScript
 
-[中文说明](README.zh-CN.md)
+[中文说明](https://github.com/RedSC1/js-ephemeris/blob/main/README.zh-CN.md)
 
 **js-ephemeris** is an astronomical ephemeris library for JavaScript and
 TypeScript, running in browsers and Node.js through the
@@ -14,7 +14,7 @@ TypeScript, running in browsers and Node.js through the
 The calculations share the core used by the Python and Dart bindings. Browser
 and Node.js applications use the same API.
 
-See [CHANGELOG](CHANGELOG.md) and the [interface inventory](docs/api-inventory.md)
+See [CHANGELOG](https://github.com/RedSC1/js-ephemeris/blob/main/CHANGELOG.md) and the [interface inventory](https://github.com/RedSC1/js-ephemeris/blob/main/docs/api-inventory.md)
 for the release scope.
 
 ## Installation
@@ -22,10 +22,10 @@ for the release scope.
 All three packages are available on npm. Install the matching versions together:
 
 ```sh
-npm install js-ephemeris@1.1.1
+npm install js-ephemeris@1.1.2
 ```
 
-For a local build, use `npm install /path/to/js-ephemeris-1.1.1.tgz`.
+For a local build, use `npm install /path/to/js-ephemeris-1.1.2.tgz`.
 Consumers do not need a C++ compiler or Emscripten. Node.js 22+ and modern
 ESM/WebAssembly-capable browsers are the intended targets.
 
@@ -40,7 +40,7 @@ ESM/WebAssembly-capable browsers are the intended targets.
 Astronomy and calendar applications need only the core. Install and import the optional packages when needed:
 
 ```sh
-npm install js-ephemeris@1.1.1 js-bazi@1.1.1 js-ziwei@1.1.1
+npm install js-ephemeris@1.1.2 js-bazi@1.1.2 js-ziwei@1.1.2
 ```
 
 Importing `js-bazi` adds `ctx.bazi()` and `eph.createBaziShenShaCatalog()`;
@@ -65,7 +65,7 @@ npm run test:package
 
 The build supports `web,worker,node`. The three `.tgz` files are written under `build/packages/`;
 generated binaries and build directories are ignored, not committed. No npm
-publication occurs. See [packaging and installation tests](docs/packaging.md)
+publication occurs. See [packaging and installation tests](https://github.com/RedSC1/js-ephemeris/blob/main/docs/packaging.md)
 for offline archives, browser setup, deployment and verification scope.
 For C++ development, `npm run build:wasm -- /path/to/core` followed by
 `npm run build` still builds against an explicit local checkout.
@@ -106,9 +106,9 @@ eph.loadEphemerisBytes(new Uint8Array(await response.arrayBuffer()), {
 });
 ```
 
-Load the complete required target/center chain, not just the Sun. Normal core routing chooses among registered sources. The byte loader also supports BSP/SPK, TKC1, and TKE1. EOP, TLL1, TSC1 and TSF1 have dedicated loaders. No public pointer or manual Wasm memory management is required. See [data loading](docs/data-loading.md).
+Load the complete required target/center chain, not just the Sun. Normal core routing chooses among registered sources. The byte loader also supports BSP/SPK, TKC1, and TKE1. EOP, TLL1, TSC1 and TSF1 have dedicated loaders. No public pointer or manual Wasm memory management is required. See [data loading](https://github.com/RedSC1/js-ephemeris/blob/main/docs/data-loading.md).
 
-The loader URL is **executable code** and must be trusted. It is not a data URL. Bundlers and Workers can pass an Emscripten `moduleFactory`; see [architecture](docs/architecture.md). Browser deployments need a CSP that permits the loader and WebAssembly compilation.
+The loader URL is **executable code** and must be trusted. It is not a data URL. Bundlers and Workers can pass an Emscripten `moduleFactory`; see [architecture](https://github.com/RedSC1/js-ephemeris/blob/main/docs/architecture.md). Browser deployments need a CSP that permits the loader and WebAssembly compilation.
 
 ## Time, calendars, and charts
 
@@ -143,11 +143,11 @@ const { value, flags } = ctx.time.scalesFromUtc(
 console.log(value.value.ut1, value.diagnostic, flags.mask);
 ```
 
-Calendar structure, the clock offset, and a chart's mean/apparent solar-clock policy are distinct. Fixed offsets are not IANA time zones: resolve DST and ambiguous local times in the application. See [API guide and coverage](docs/api.md).
+Calendar structure, the clock offset, and a chart's mean/apparent solar-clock policy are distinct. Fixed offsets are not IANA time zones: resolve DST and ambiguous local times in the application. See [API guide and coverage](https://github.com/RedSC1/js-ephemeris/blob/main/docs/api.md).
 
 BaZi supports relations, Xiao-Yun, Renyuan-Siling and custom Shen Sha catalogs; Ziwei has shared/reloadable TOML catalogs, immutable JSON option modules, UTC/UT1 flow navigation and reverse lookup, and local/instant/solar/lunar entry points. Solar chart clocks do not replace the physical instant used for solar-term boundaries. Use the separate gender enums: BaZi male is `1`, while Ziwei male is `0`.
 
-Astronomy services include observed alt/az, rise/set/transit, stellar apparent/observed positions, general event searches, orbital elements/phenomena, heliacal visibility, occultations, house/sidereal/lunar-point extensions, source priorities/metadata and custom target/ayanamsha/house callbacks. These use the C++ core algorithms. See the [astronomy guide](docs/astronomy.md) and [interface inventory](docs/api-inventory.md) for coverage and native restrictions.
+Astronomy services include observed alt/az, rise/set/transit, stellar apparent/observed positions, general event searches, orbital elements/phenomena, heliacal visibility, occultations, house/sidereal/lunar-point extensions, source priorities/metadata and custom target/ayanamsha/house callbacks. These use the C++ core algorithms. See the [astronomy guide](https://github.com/RedSC1/js-ephemeris/blob/main/docs/astronomy.md) and [interface inventory](https://github.com/RedSC1/js-ephemeris/blob/main/docs/api-inventory.md) for coverage and native restrictions.
 
 ## Results, errors, and concurrency
 
@@ -161,6 +161,7 @@ Astronomy services include observed alt/az, rise/set/transit, stellar apparent/o
 
 ```sh
 npm test
+npm run test:links -- --online
 npm run test:types
 npm run test:integration
 npm run test:astronomy
@@ -171,19 +172,19 @@ TAIYIN_TEST_DATA_ROOT=/path/to/de442-full npm run test:integration
 npm run example:browser
 ```
 
-Node and a real browser have exercised position/state/batch, strict and estimated time conversions, leap seconds, three calendar modes, BaZi/custom predicates, Ziwei solar clocks/flows/casting/catalog reload, ownership guards, and **all 39 eclipse bridge operations**. See [verification notes](docs/verification.md) for scope and limitations. Native agreement tests verify wrapper consistency, not independent astronomical accuracy.
+Node and a real browser have exercised position/state/batch, strict and estimated time conversions, leap seconds, three calendar modes, BaZi/custom predicates, Ziwei solar clocks/flows/casting/catalog reload, ownership guards, and **all 39 eclipse bridge operations**. See [verification notes](https://github.com/RedSC1/js-ephemeris/blob/main/docs/verification.md) for scope and limitations. Native agreement tests verify wrapper consistency, not independent astronomical accuracy.
 
 The compatibility workflow compiles Wasm once, then reuses the verified assets
 for Node 22/24 on Linux/macOS/Windows and browser-engine/Vite tests. It contains
 no publish step. WebKit testing is not the same as testing Apple's installed
 Safari application; results and remaining gaps are recorded in the verification
-notes. See [Vite deployment](docs/packaging.md#vite-applications) for asset setup.
+notes. See [Vite deployment](https://github.com/RedSC1/js-ephemeris/blob/main/docs/packaging.md#vite-applications) for asset setup.
 
 ## License
 
 Original Wasm binding code is MPL-2.0. The shared Taiyin core and its third-party
-components retain their applicable notices. See [LICENSE](LICENSE),
-[NOTICE](NOTICE), and the [core project](https://github.com/RedSC1/taiyin-ephemeris).
+components retain their applicable notices. See [LICENSE](https://github.com/RedSC1/js-ephemeris/blob/main/LICENSE),
+[NOTICE](https://github.com/RedSC1/js-ephemeris/blob/main/NOTICE), and the [core project](https://github.com/RedSC1/taiyin-ephemeris).
 
 ## Earlier releases
 

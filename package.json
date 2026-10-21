@@ -1,6 +1,6 @@
 {
   "name": "js-ephemeris-workspace",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "files": [],
   "description": "JavaScript/TypeScript ephemeris library powered by Taiyin C++/WebAssembly: planetary positions, eclipses, Chinese calendars, BaZi and Ziwei for browsers and Node.js.",
@@ -31,6 +31,7 @@
     "test:package": "node scripts/test-package.mjs",
     "check": "npm run build && tsc -p tsconfig.type-tests.json",
     "test:types": "npm run build && tsc -p tsconfig.type-tests.json",
+    "test:links": "node scripts/check-readme-links.mjs",
     "test": "npm run build && node --test test/unit.test.mjs test/packaging.test.mjs",
     "test:integration": "npm run build && node --test test/real-wasm.test.mjs test/extensions.test.mjs",
     "test:astronomy": "npm run build && node --test test/astronomy.test.mjs",

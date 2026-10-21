@@ -36,6 +36,91 @@ import {
   cleanupInstalledTest,
   closeViteServers,
 } from "../scripts/package-test-cleanup.mjs";
+import {
+  checkReadmeLinks,
+  checkOnlineLinks,
+  trackedRepositoryFiles,
+} from "../scripts/readme-links.mjs";
+
+test("published READMEs use absolute links to tracked GitHub files", () => {
+  const tracked = trackedRepositoryFiles(root);
+  for (const name of ["js-ephemeris", "js-bazi", "js-ziwei"])
+    for (const filename of ["README.md", "README.zh-CN.md"])
+      assert.ok(
+        checkReadmeLinks(
+          readFileSync(resolve(root, "packages", name, filename), "utf8"),
+          tracked,
+          `${name}/${filename}`,
+        ).length > 0,
+      );
+});
+
+test("README link checks reject npm-relative links and ignored staging paths", () => {
+  const tracked = new Set(["docs/api.md", "NOTICE"]);
+  assert.throws(
+    () => checkReadmeLinks("[API](docs/api.md)", tracked),
+    /absolute HTTPS/,
+  );
+  assert.throws(
+    () =>
+      checkReadmeLinks(
+        "[NOTICE](https://github.com/RedSC1/js-ephemeris/blob/main/packages/js-bazi/NOTICE)",
+        tracked,
+      ),
+    /not a tracked/,
+  );
+  assert.throws(
+    () =>
+      checkReadmeLinks(
+        "[API](https://github.com/RedSC1/js-ephemeris/blob/HEAD/packages/js-ephemeris/docs/api.md)",
+        tracked,
+      ),
+    /not a tracked/,
+  );
+  assert.throws(
+    () =>
+      checkReadmeLinks(
+        "[API](https://github.com/RedSC1/js-ephemeris/blob/main/docs/missing.md)",
+        tracked,
+      ),
+    /not a tracked/,
+  );
+  const link =
+    "https://github.com/RedSC1/js-ephemeris/blob/main/docs/api.md#quick-start";
+  assert.deepEqual(
+    checkReadmeLinks(
+      `[API](${link})\n\n\`\`\`js\n// [example](local.opm2)\n\`\`\``,
+      tracked,
+    ),
+    [link],
+  );
+});
+
+test("online README checks reject HTTP errors and do not hide network failures", async () => {
+  const url = "https://github.com/RedSC1/js-ephemeris/blob/main/docs/api.md";
+  await assert.rejects(
+    checkOnlineLinks([url], async () => ({ ok: false, status: 404 })),
+    /HTTP 404/,
+  );
+  await assert.rejects(
+    checkOnlineLinks([url], async () => {
+      throw new Error("network failure");
+    }),
+    /network failure/,
+  );
+  const requests = [];
+  assert.equal(
+    await checkOnlineLinks(
+      [url, url + "#quick-start"],
+      async (target, options) => {
+        requests.push([target, options.method]);
+        return { ok: true };
+      },
+    ),
+    1,
+  );
+  assert.deepEqual(requests, [[url, "HEAD"]]);
+});
 
 function corePin(bytes = "archive", revision = "a".repeat(40)) {
   const repository = "https://github.com/example/core";
