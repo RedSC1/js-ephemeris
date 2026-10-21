@@ -23,7 +23,7 @@ npm run test:package -- --browsers chromium,firefox,webkit --vite
 # Node-only CI jobs do not require a browser installation:
 npm run test:package -- --browsers none
 # Test an existing candidate verbatim (CI uses the build job's tarball):
-npm run test:package -- --archive build/packages/js-ephemeris-1.1.0.tgz --browsers chromium,firefox,webkit --vite
+npm run test:package -- --archive build/packages/js-ephemeris-1.1.1.tgz --browsers chromium,firefox,webkit --vite
 ```
 
 If no browser is installed, `npx playwright-core install chromium` installs the
@@ -171,7 +171,7 @@ Node Workers and Vite Workers exercise all three packages.
 
 ## Release configuration and manual approval
 
-The three package manifests use version `1.1.0`, explicit public access and the
+The three package manifests use version `1.1.1`, explicit public access and the
 `https://registry.npmjs.org/` registry. Each manifest identifies its monorepo source directory;
 the optional packages require the matching core version. The repository-root
 workspace is private and is not a fourth distributable package.
@@ -180,14 +180,14 @@ No build script or CI job logs into npm or publishes. To rehearse publication of
 an already tested archive without uploading it:
 
 ```sh
-npm publish ./build/packages/js-ephemeris-1.1.0.tgz --dry-run --ignore-scripts
-npm publish ./build/packages/js-bazi-1.1.0.tgz --dry-run --ignore-scripts
-npm publish ./build/packages/js-ziwei-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ephemeris-1.1.1.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-bazi-1.1.1.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ziwei-1.1.1.tgz --dry-run --ignore-scripts
 ```
 
 Dry-run success does not verify real publication authentication or reserve a name.
 After npm login and explicit publication approval, publish the tested core archive
-first, wait for `js-ephemeris@1.1.0` to be readable from the registry, then publish
+first, wait for `js-ephemeris@1.1.1` to be readable from the registry, then publish
 the two optional archives. Do not publish the repository root, and do not install
 an extension against the old 0.0.x core.
 

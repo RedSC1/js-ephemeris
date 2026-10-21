@@ -12,17 +12,17 @@
 
 计算复用 Python、Dart 绑定所使用的同一套内核，浏览器和 Node.js 使用相同的 API。
 
-1.1.0 的功能范围见 [CHANGELOG](CHANGELOG.md) 和[接口清单](docs/api-inventory.md)。
+功能范围见 [CHANGELOG](CHANGELOG.md) 和[接口清单](docs/api-inventory.md)。
 
 ## 安装
 
-三个包的 **1.1.0** 版本均已发布到 npm。
+三个包均可从 npm 安装；核心与扩展请使用相同版本：
 
 ```sh
-npm install js-ephemeris@1.1.0
+npm install js-ephemeris@1.1.1
 ```
 
-本地构建后可使用 `npm install /path/to/js-ephemeris-1.1.0.tgz`。
+本地构建后可使用 `npm install /path/to/js-ephemeris-1.1.1.tgz`。
 使用者不需要安装 C++ 编译器或 Emscripten。目标环境为 Node.js 22+ 和支持现代 ESM／WebAssembly 的浏览器。
 
 ## 三个独立 npm 包
@@ -36,7 +36,7 @@ npm install js-ephemeris@1.1.0
 只算天文或农历无需安装另外两个包。需要扩展时，安装并导入对应包：
 
 ```sh
-npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
+npm install js-ephemeris@1.1.1 js-bazi@1.1.1 js-ziwei@1.1.1
 ```
 
 `js-bazi` 导入后才提供 `ctx.bazi()` 和 `eph.createBaziShenShaCatalog()`；
@@ -45,7 +45,7 @@ npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
 默认紫微规则表仍嵌在共享 Wasm 中。每次工厂调用仍创建独立扩展 context，不改为隐式单例。
 如果只导入扩展的 TypeScript 类型，还需要 `import "js-bazi"` 或 `import "js-ziwei"`
 启用运行时方法；`import type` 会被编译器删除。
-三个包在同一仓库维护，统一使用 1.1.0 版本号，分别发布。
+三个包在同一仓库维护，版本号同步，分别发布。
 
 ## 本地构建
 

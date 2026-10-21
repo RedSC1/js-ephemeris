@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-10-21
+
+- Remove stale pre-publication wording from the English and Chinese npm READMEs.
+- Update installation examples and require the matching `js-ephemeris@1.1.1` peer package.
+- No calculation or API changes.
+
 ## 1.1.0 — 2026-10-20
 
 - Initial independent Ziwei npm extension, split from the unified prerelease package.

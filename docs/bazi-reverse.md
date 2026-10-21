@@ -41,6 +41,6 @@ lunar-month day-boundary mode is independent of the chart clock.
 日、时柱按所选虚拟排盘时钟判断。真太阳时在每个边界重新反解，不用固定均时差。
 固定偏移以 UT1 为基准，不是 UTC/夏令时转换；UTC 用户先显式转换。
 
-This uses Taiyin C++ `v1.1.0`; the JS binding itself is not yet published.
+This uses the unchanged Taiyin C++ `v1.1.0` core, available through the `js-ephemeris` and `js-bazi` npm packages.
 `npm run test:bazi-reverse` runs the real Wasm regression suite;
 the same scenario is also included in the browser example.

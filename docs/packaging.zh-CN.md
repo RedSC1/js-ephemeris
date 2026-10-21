@@ -20,7 +20,7 @@ npm run test:package -- --browsers chromium,firefox,webkit --vite
 # 只测 Node，不要求安装浏览器：
 npm run test:package -- --browsers none
 # 原样测试指定候选包，CI 使用构建 job 上传的那一份：
-npm run test:package -- --archive build/packages/js-ephemeris-1.1.0.tgz --browsers chromium,firefox,webkit --vite
+npm run test:package -- --archive build/packages/js-ephemeris-1.1.1.tgz --browsers chromium,firefox,webkit --vite
 ```
 
 没有测试浏览器时，可以用 `npx playwright-core install chromium` 安装。
@@ -123,21 +123,21 @@ const eph = await Ephemeris.initialize({
 
 ## 发布配置与手动确认
 
-三个包统一使用 `1.1.0`，指定 public access 和 `https://registry.npmjs.org/`，
+三个包统一使用 `1.1.1`，指定 public access 和 `https://registry.npmjs.org/`，
 并填写各自在 monorepo 中的源码目录。扩展要求匹配的核心版本。
 根 workspace 保留 `private: true`，不是第四个要发布的包。
 
 构建脚本和 CI 都不会登录或发布 npm。对已经测试过的安装包，可只执行发布演练：
 
 ```sh
-npm publish ./build/packages/js-ephemeris-1.1.0.tgz --dry-run --ignore-scripts
-npm publish ./build/packages/js-bazi-1.1.0.tgz --dry-run --ignore-scripts
-npm publish ./build/packages/js-ziwei-1.1.0.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ephemeris-1.1.1.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-bazi-1.1.1.tgz --dry-run --ignore-scripts
+npm publish ./build/packages/js-ziwei-1.1.1.tgz --dry-run --ignore-scripts
 ```
 
 dry-run 不会上传，也不能证明真实发布鉴权通过或包名已被预留。
 完成 npm 登录并明确批准发布后，先发布已测试的核心安装包，确认 registry 能读取
-`js-ephemeris@1.1.0` 后，再发布两个扩展。不要发布根 workspace，也不要把扩展配到旧版 0.0.x 核心上。
+`js-ephemeris@1.1.1` 后，再发布两个扩展。不要发布根 workspace，也不要把扩展配到旧版 0.0.x 核心上。
 
 校验安装包时，必须使用**同一次构建**生成的 build-info 清单。
 同源码、同 SDK 的 Linux CI 与本机独立编译产物也可能哈希不同，不能混用清单。

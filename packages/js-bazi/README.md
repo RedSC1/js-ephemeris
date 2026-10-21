@@ -3,17 +3,17 @@
 [中文说明](README.zh-CN.md)
 
 Optional BaZi / Shen Sha extension for [js-ephemeris](https://github.com/RedSC1/js-ephemeris).
-Version **1.1.0** is available on npm and requires the matching
-`js-ephemeris@1.1.0` peer package.
+Available on npm. Version **1.1.1** requires the matching
+`js-ephemeris@1.1.1` peer package.
 
 ```sh
-npm install js-ephemeris@1.1.0 js-bazi@1.1.0
+npm install js-ephemeris@1.1.1 js-bazi@1.1.1
 ```
 
 For local archives, install both packages in one command, replacing the paths as needed:
 
 ```sh
-npm install /path/to/js-ephemeris-1.1.0.tgz /path/to/js-bazi-1.1.0.tgz
+npm install /path/to/js-ephemeris-1.1.1.tgz /path/to/js-bazi-1.1.1.tgz
 ```
 
 ## Quick start
@@ -55,4 +55,4 @@ See the repository's [API guide](https://github.com/RedSC1/js-ephemeris/blob/mai
 ## License
 
 MPL-2.0; third-party attribution is retained in the core and [NOTICE](NOTICE).
-See [CHANGELOG](CHANGELOG.md) for the 1.1.0 release notes.
+See [CHANGELOG](CHANGELOG.md) for release notes.

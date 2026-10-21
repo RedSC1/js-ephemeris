@@ -3,18 +3,18 @@
 [English](README.md)
 
 八字与神煞扩展，复用 [js-ephemeris](https://github.com/RedSC1/js-ephemeris) 的
-C++／WebAssembly 内核。需要匹配的 `js-ephemeris@1.1.0` 核心包。
+C++／WebAssembly 内核。需要匹配的 `js-ephemeris@1.1.1` 核心包。
 
-**1.1.0** 已发布到 npm：
+从 npm 安装核心与扩展：
 
 ```sh
-npm install js-ephemeris@1.1.0 js-bazi@1.1.0
+npm install js-ephemeris@1.1.1 js-bazi@1.1.1
 ```
 
 如需安装本地构建产物，将路径替换为实际位置：
 
 ```sh
-npm install /path/to/js-ephemeris-1.1.0.tgz /path/to/js-bazi-1.1.0.tgz
+npm install /path/to/js-ephemeris-1.1.1.tgz /path/to/js-bazi-1.1.1.tgz
 ```
 
 ## 快速开始

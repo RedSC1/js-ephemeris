@@ -15,17 +15,17 @@ The calculations share the core used by the Python and Dart bindings. Browser
 and Node.js applications use the same API.
 
 See [CHANGELOG](CHANGELOG.md) and the [interface inventory](docs/api-inventory.md)
-for the 1.1.0 release scope.
+for the release scope.
 
 ## Installation
 
-Version **1.1.0** is available on npm for all three packages.
+All three packages are available on npm. Install the matching versions together:
 
 ```sh
-npm install js-ephemeris@1.1.0
+npm install js-ephemeris@1.1.1
 ```
 
-For a local build, use `npm install /path/to/js-ephemeris-1.1.0.tgz`.
+For a local build, use `npm install /path/to/js-ephemeris-1.1.1.tgz`.
 Consumers do not need a C++ compiler or Emscripten. Node.js 22+ and modern
 ESM/WebAssembly-capable browsers are the intended targets.
 
@@ -40,7 +40,7 @@ ESM/WebAssembly-capable browsers are the intended targets.
 Astronomy and calendar applications need only the core. Install and import the optional packages when needed:
 
 ```sh
-npm install js-ephemeris@1.1.0 js-bazi@1.1.0 js-ziwei@1.1.0
+npm install js-ephemeris@1.1.1 js-bazi@1.1.1 js-ziwei@1.1.1
 ```
 
 Importing `js-bazi` adds `ctx.bazi()` and `eph.createBaziShenShaCatalog()`;
@@ -50,7 +50,7 @@ No second Wasm is shipped or instantiated. Default Ziwei tables remain embedded 
 Each factory call still creates an independent extension context, not an implicit singleton.
 If you only need extension types, also use `import "js-bazi"` or `import "js-ziwei"`
 to enable its runtime methods; TypeScript-only imports are erased.
-The packages share one repository and one 1.1.0 version line, but are published separately.
+The packages share one repository and a synchronized version number, but are published separately.
 
 ## Build locally
 

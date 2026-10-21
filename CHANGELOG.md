@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-10-21
+
+- Correct the English and Chinese npm READMEs: remove stale pre-publication wording and update installation examples.
+- Synchronize all three package versions and extension peer dependencies at 1.1.1.
+- Documentation and package metadata only; calculation APIs and the pinned Taiyin C++ 1.1.0 core are unchanged.
+
 ## 1.1.0 — 2026-10-20
 
 - Split the npm distribution into `js-ephemeris`, `js-bazi` and `js-ziwei`, matching the Dart package boundaries. Optional imports augment the existing context; extensions share one core/Wasm and do not duplicate binaries.

@@ -146,6 +146,8 @@ const candidates = packageNames.map((name) => {
     "LICENSE",
     "NOTICE",
     "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
   ])
     assert.ok(files.includes(file), `Missing ${name} entry: ${file}`);
   assert.ok(
@@ -262,6 +264,12 @@ try {
         !contents.includes(Buffer.from(root.replace(/\/$/, ""))),
         `Build-machine path leaked in ${file}`,
       );
+      if (file === "README.md" || file === "README.zh-CN.md")
+        assert.doesNotMatch(
+          contents.toString("utf8"),
+          /npm publication(?: is)? pending|prepared for npm publication|Until it appears on npm|Before publication|npm 发布尚待执行|发布前可/iu,
+          `Stale pre-publication wording in ${candidate.name}/${file}`,
+        );
     }
   const smoke = resolve(app, "smoke");
   mkdirSync(smoke);
